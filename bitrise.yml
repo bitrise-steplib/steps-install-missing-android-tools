@@ -1,0 +1,130 @@
+format_version: 1.1.0
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+app:
+  envs:
+  # define these in your .bitrise.secrets.yml
+  - SAMPLE_APP_REPOSITORY_URL: https://github.com/bitrise-samples/android-sdk21-tools-21.0.1.git
+  - SAMPLE_APP_CLONE_INTO_DIR: ./_tmp/android-sdk21-tools-21.0.1
+
+workflows:
+  # ----------------------------------------------------------------
+  # --- workflow to Step Test
+  test:
+    steps:
+    - script:
+        title: Print go environment
+        inputs:
+        - content: |-
+            set -x
+            go version
+            echo $GO15VENDOREXPERIMENT
+    - script:
+        title: Export GOPATH
+        inputs:
+        - content: |-
+            set -x
+            envman add --key GOPATH --value "$BITRISE_SOURCE_DIR/go"
+    - script:
+        title: "Go Test"
+        inputs:
+        - working_dir: $BITRISE_SOURCE_DIR/go/src/github.com/bitrise-io/install-missing-android-tools
+        - content: |
+            set -ex
+            go test ./...
+    - script:
+        title: Step audit
+        inputs:
+        - content: stepman audit --step-yml=./step.yml
+    - script:
+        title: Git clone sample app
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -e
+            set -x
+
+            if [ -e $SAMPLE_APP_CLONE_INTO_DIR ] ; then
+              rm -rf $SAMPLE_APP_CLONE_INTO_DIR
+            fi
+
+            git clone $SAMPLE_APP_REPOSITORY_URL $SAMPLE_APP_CLONE_INTO_DIR
+    - change-workdir:
+        title: Switch working dir
+        run_if: true
+        inputs:
+        - path: $SAMPLE_APP_CLONE_INTO_DIR
+    - path::./:
+        title: Step test
+
+  # ----------------------------------------------------------------
+  # --- workflows to create Release
+  create-release:
+    steps:
+    - script:
+        title:
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -e
+
+            export CI=true
+            releaseman create --bump-version patch
+
+  create-release-version:
+    envs:
+    - RELEASE_VERSION: 2.1.1
+    steps:
+    - script:
+        title:
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -e
+
+            export CI=true
+            releaseman create --version $RELEASE_VERSION
+
+  # ----------------------------------------------------------------
+  # --- workflows to Share this step into a Step Library
+  share-this-step:
+    envs:
+      # if you want to share this step into a StepLib
+      - MY_STEPLIB_REPO_FORK_GIT_URL: $MY_STEPLIB_REPO_FORK_GIT_URL
+      - STEP_ID_IN_STEPLIB: install-missing-android-tools
+      - STEP_GIT_VERION_TAG_TO_SHARE: 0.9.0
+      - STEP_GIT_CLONE_URL: https://github.com/bitrise-steplib/steps-install-missing-android-tools.git
+    description: |-
+      If this is the first time you try to share a Step you should
+      first call: $ bitrise share
+
+      This will print you a guide, and information about how Step sharing
+      works. Please read it at least once!
+
+      As noted in the Step sharing guide you'll have to fork the
+      StepLib you want to share this step into. Once you're done with forking
+      the repository you should set your own fork's git clone URL
+      in the `.bitrise.secrets.yml` file, or here in the `envs` section,
+      as the value of the `MY_STEPLIB_REPO_FORK_GIT_URL` environment.
+
+      You're now ready to share this Step, just make sure that
+      the `STEP_ID_IN_STEPLIB` and `STEP_GIT_VERION_TAG_TO_SHARE`
+      environments are set to the desired values!
+
+      To share this Step into a StepLib you can just run: $ bitrise run share-this-step
+
+      Once it finishes the only thing left is to actually create a Pull Request,
+      the way described in the guide printed at the end of the process.
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -e
+            set -x
+
+            bitrise share start -c ${MY_STEPLIB_REPO_FORK_GIT_URL}
+
+            bitrise share create --stepid ${STEP_ID_IN_STEPLIB} --tag ${STEP_GIT_VERION_TAG_TO_SHARE} --git ${STEP_GIT_CLONE_URL}
+
+            bitrise share finish

@@ -1,0 +1,39 @@
+title: Install missing Android tools
+summary: Install missing Android tools
+description: |-
+  This step analyze your root settings.gradle file, to collect the active build.gradle files.
+
+  Based on the build.gradle files it will:
+
+  - install required `compileSdkVersion`s if missing
+  - install required `buildToolsVersion`s if missing
+  - update `Support Library` if used
+  - update `Google Play Services` if used
+website: https://github.com/bitrise-steplib/steps-install-missing-android-tools
+source_code_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools
+support_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools/issues
+host_os_tags:
+  - osx-10.10
+project_type_tags:
+  - android
+type_tags:
+  - script
+is_requires_admin_user: false
+is_always_run: false
+is_skippable: false
+run_if: ""
+inputs:
+  - source_dir: $BITRISE_SOURCE_DIR
+    opts:
+      title: "Project source dir"
+      summary: ""
+      description: |
+        Your android project's source directory.
+  - update_support_library_and_play_services: "true"
+    opts:
+      title: "Should the step update `Support Library` and `Google Play Services`"
+      summary: ""
+      description: |
+        If project uses `Support Library` and/or `Google Play Services` they will be updated by default.
+
+        Set this input to `"false"` if you wan to skip `Support Library` and/or `Google Play Services` updates.
