@@ -21,7 +21,15 @@ type_tags:
 is_requires_admin_user: false
 is_always_run: false
 is_skippable: false
-run_if: ""
+deps:
+  brew:
+  - name: go
+  apt_get:
+  - name: golang
+    bin_name: go
+toolkit:
+  go:
+    package_name: github.com/bitrise-steplib/steps-install-missing-android-tools
 inputs:
   - source_dir: $BITRISE_SOURCE_DIR
     opts:
@@ -29,6 +37,7 @@ inputs:
       summary: ""
       description: |
         Your android project's source directory.
+      is_required: true
   - update_support_library_and_play_services: "true"
     opts:
       title: "Should the step update `Support Library` and `Google Play Services`"
@@ -37,3 +46,7 @@ inputs:
         If project uses `Support Library` and/or `Google Play Services` they will be updated by default.
 
         Set this input to `"false"` if you wan to skip `Support Library` and/or `Google Play Services` updates.
+      value_options:
+      - "true"
+      - "false"
+      is_required: true
