@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"strconv"
+
 	"github.com/bitrise-io/depman/pathutil"
 	"github.com/bitrise-io/go-utils/cmdex"
 	"github.com/bitrise-io/go-utils/errorutil"
@@ -85,7 +87,7 @@ func (androidToolHelper AndroidToolHelperModel) IsSupportLibraryInstalled() (boo
 func (androidToolHelper AndroidToolHelperModel) InstallSDKVersion(v *version.Version) error {
 	// $ANDROID_HOME/platforms/android-23
 	sdkMajorVersion := v.Segments()[0]
-	sdkMajorVersionStr := string(sdkMajorVersion)
+	sdkMajorVersionStr := strconv.Itoa(sdkMajorVersion)
 	sdkFilter := "android-" + sdkMajorVersionStr
 	cmdSlice := androidInstallCmdSlice(sdkFilter)
 	return runAndroidInstallCmdSlice(cmdSlice)
@@ -151,6 +153,8 @@ func (androidToolHelper AndroidToolHelperModel) IsGooglePlayServicesInstalled() 
 // -----------------------
 
 func androidInstallCmdSlice(filter string) []string {
+	fmt.Printf("filter: (%s)\n", filter)
+
 	return []string{
 		"android",
 		"update",
@@ -181,8 +185,7 @@ func isInstallSuccess(output string) (bool, error) {
 }
 
 func runAndroidInstallCmdSlice(cmdSlice []string) error {
-	cmdStr := cmdex.LogPrintableCommandArgs(cmdSlice)
-	log.Detail(cmdStr)
+	log.Detail("$ %s", cmdex.PrintableCommandArgs(false, cmdSlice))
 
 	var outBuffer bytes.Buffer
 	outWriter := io.Writer(&outBuffer)

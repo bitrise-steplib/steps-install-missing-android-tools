@@ -94,6 +94,7 @@ func NewSortableAbsPath(pth string) (SortableAbsPath, error) {
 	}
 
 	components := strings.Split(absPth, string(os.PathSeparator))
+
 	fixedComponents := []string{}
 	for _, c := range components {
 		if c != "" {
@@ -117,11 +118,11 @@ func (s ByComponents) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 func (s ByComponents) Less(i, j int) bool {
-	pth1 := s[j]
-	pth2 := s[j]
+	sortablePath1 := s[i]
+	sortablePath2 := s[j]
 
-	depth2 := len(pth1.pthComponents)
-	depth1 := len(pth2.pthComponents)
+	depth1 := len(sortablePath1.pthComponents)
+	depth2 := len(sortablePath2.pthComponents)
 
 	if depth1 < depth2 {
 		return true
@@ -131,10 +132,14 @@ func (s ByComponents) Less(i, j int) bool {
 
 	// if same component size,
 	// do alphabetical sort based on the last component
-	base1 := filepath.Base(pth1.pth)
-	base2 := filepath.Base(pth2.pth)
+	base1 := filepath.Base(sortablePath1.pth)
+	base2 := filepath.Base(sortablePath2.pth)
 
-	return base1 < base2
+	if base1 < base2 {
+		return true
+	}
+
+	return false
 }
 
 // -----------------------
@@ -233,6 +238,7 @@ func main() {
 		}
 		os.Exit(1)
 	}
+	fmt.Println()
 
 	//
 	// Search for root setting.gradle file
@@ -356,6 +362,8 @@ func main() {
 	for _, dependencies := range dependenciesToEnsure {
 
 		// Ensure SDK
+		log.Detail("Checking compileSdkVersion: %s", dependencies.ComplieSDKVersion)
+
 		if installed, err := toolHelper.IsSDKVersionInstalled(dependencies.ComplieSDKVersion); err != nil {
 			log.Error("Failed to check if sdk version (%s) installed, error: %s", dependencies.ComplieSDKVersion.String(), err)
 			os.Exit(1)
@@ -371,6 +379,8 @@ func main() {
 		log.Done("compileSdkVersion: %s installed", dependencies.ComplieSDKVersion.String())
 
 		// Ensure build-tool
+		log.Detail("Checking buildToolsVersion: %s", dependencies.BuildToolsVersion)
+
 		if installed, err := toolHelper.IsBuildToolsInstalled(dependencies.BuildToolsVersion); err != nil {
 			log.Error("Failed to check if build-tools (%s) installed, error: %s", dependencies.BuildToolsVersion.String(), err)
 			os.Exit(1)
