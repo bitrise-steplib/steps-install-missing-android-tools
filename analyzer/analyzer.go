@@ -60,7 +60,7 @@ func ParseIncludedModules(settingsGradleContent string) ([]string, error) {
 				module := strings.TrimSpace(split)
 
 				if strings.HasPrefix(module, `'`) {
-					module = strings.Trim(module, "'")
+					module = strings.Trim(module, `'`)
 				} else if strings.HasPrefix(module, `"`) {
 					module = strings.Trim(module, `"`)
 				}

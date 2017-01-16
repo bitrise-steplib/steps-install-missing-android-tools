@@ -142,14 +142,13 @@ func main() {
 	} else {
 		rootSettingsGradleContent, err := fileutil.ReadStringFromFile(rootSettingsGradleFile)
 		if err != nil {
-			log.Errorf("Failed to read settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-			os.Exit(1)
+			failf("Failed to read settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
 		}
 
 		modules, err := analyzer.ParseIncludedModules(rootSettingsGradleContent)
 		if err != nil {
-			log.Errorf("Failed to parse included modules from settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-			os.Exit(1)
+			failf("Failed to parse included modules from settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
+
 		}
 
 		log.Printf("active modules to analyze: %v", modules)
@@ -157,8 +156,7 @@ func main() {
 		for _, module := range modules {
 			moduleBuildGradleFile := filepath.Join(rootBuildGradleDir, module, buildGradleBasename)
 			if exist, err := pathutil.IsPathExists(moduleBuildGradleFile); err != nil {
-				log.Errorf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
-				os.Exit(1)
+				failf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
 			} else if !exist {
 				log.Warnf("build.gradle file not found for module: %s at: %s, error: %s", module, moduleBuildGradleFile, err)
 				continue
@@ -183,14 +181,13 @@ func main() {
 
 		content, err := fileutil.ReadStringFromFile(buildGradleFile)
 		if err != nil {
-			log.Errorf("Failed to read build.gradle file at: %s, error: %s", buildGradleFile, err)
-			os.Exit(1)
+			failf("Failed to read build.gradle file at: %s, error: %s", buildGradleFile, err)
 		}
 
 		dependencies, err := analyzer.NewProjectDependenciesModel(content)
 		if err != nil {
 			log.Errorf("Failed to parse build.gradle at: %s", buildGradleFile)
-			os.Exit(1)
+			continue
 		}
 
 		dependenciesToEnsure = append(dependenciesToEnsure, dependencies)
