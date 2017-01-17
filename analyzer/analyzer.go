@@ -23,8 +23,8 @@ type ProjectDependenciesModel struct {
 	UseGooglePlayServices bool
 }
 
-// NewProjectDependenciesModel ...
-func NewProjectDependenciesModel(buildGradleContent string) (ProjectDependenciesModel, error) {
+// NewProjectDependencies ...
+func NewProjectDependencies(buildGradleContent string) (ProjectDependenciesModel, error) {
 	return parseBuildGradle(buildGradleContent)
 }
 
@@ -58,16 +58,9 @@ func ParseIncludedModules(settingsGradleContent string) ([]string, error) {
 			splits := strings.Split(includeStr, ",")
 			for _, split := range splits {
 				module := strings.TrimSpace(split)
-
-				if strings.HasPrefix(module, `'`) {
-					module = strings.Trim(module, `'`)
-				} else if strings.HasPrefix(module, `"`) {
-					module = strings.Trim(module, `"`)
-				}
-
-				if strings.HasPrefix(module, ":") {
-					module = strings.TrimPrefix(module, ":")
-				}
+				module = strings.Trim(module, `'`)
+				module = strings.Trim(module, `"`)
+				module = strings.TrimPrefix(module, ":")
 
 				modules = append(modules, module)
 			}

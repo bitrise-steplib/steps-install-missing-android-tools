@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -24,80 +23,55 @@ import (
 // --- Stucts
 // -----------------------
 
-// AndroidToolHelperModel ...
-type AndroidToolHelperModel struct {
+// Model ...
+type Model struct {
 	androidHome string
 }
 
-// NewAndroidToolHelperModel ...
-func NewAndroidToolHelperModel() (AndroidToolHelperModel, error) {
-	androidHome := os.Getenv("ANDROID_HOME")
-	if androidHome == "" {
-		return AndroidToolHelperModel{}, fmt.Errorf("Missing ANDROID_HOME environment")
-	}
-
-	return AndroidToolHelperModel{
+// New ...
+func New(androidHome string) Model {
+	return Model{
 		androidHome: androidHome,
-	}, nil
+	}
 }
 
 // IsSDKVersionInstalled ...
-func (androidToolHelper AndroidToolHelperModel) IsSDKVersionInstalled(v *version.Version) (bool, error) {
+func (m Model) IsSDKVersionInstalled(v *version.Version) (bool, error) {
 	// $ANDROID_HOME/platforms/android-23
 	sdkMajorVersion := v.Segments()[0]
 
 	sdkFolderName := fmt.Sprintf("android-%d", sdkMajorVersion)
-	sdkPath := filepath.Join(androidToolHelper.androidHome, "platforms", sdkFolderName)
+	sdkPath := filepath.Join(m.androidHome, "platforms", sdkFolderName)
 
-	exist, err := pathutil.IsPathExists(sdkPath)
-	if err != nil {
-		return false, err
-	}
-
-	return exist, nil
+	return pathutil.IsPathExists(sdkPath)
 }
 
 // IsBuildToolsInstalled ...
-func (androidToolHelper AndroidToolHelperModel) IsBuildToolsInstalled(v *version.Version) (bool, error) {
+func (m Model) IsBuildToolsInstalled(v *version.Version) (bool, error) {
 	// $ANDROID_HOME/build-tools/23.0.3
-	buildToolsPath := filepath.Join(androidToolHelper.androidHome, "build-tools", v.String())
+	buildToolsPath := filepath.Join(m.androidHome, "build-tools", v.String())
 
-	exist, err := pathutil.IsPathExists(buildToolsPath)
-	if err != nil {
-		return false, err
-	}
-
-	return exist, nil
+	return pathutil.IsPathExists(buildToolsPath)
 }
 
 // IsSupportLibraryInstalled ...
-func (androidToolHelper AndroidToolHelperModel) IsSupportLibraryInstalled() (bool, error) {
+func (m Model) IsSupportLibraryInstalled() (bool, error) {
 	// $ANDROID_HOME/extras/android/m2repository/com/android/support
-	supportLibraryPath := filepath.Join(androidToolHelper.androidHome, "extras/android/m2repository/com/android/support")
+	supportLibraryPath := filepath.Join(m.androidHome, "extras/android/m2repository/com/android/support")
 
-	exist, err := pathutil.IsPathExists(supportLibraryPath)
-	if err != nil {
-		return false, err
-	}
-
-	return exist, nil
+	return pathutil.IsPathExists(supportLibraryPath)
 }
 
 // IsGooglePlayServicesInstalled ...
-func (androidToolHelper AndroidToolHelperModel) IsGooglePlayServicesInstalled() (bool, error) {
+func (m Model) IsGooglePlayServicesInstalled() (bool, error) {
 	// $ANDROID_HOME/extras/google/google_play_services
-	googlePlayServicesPath := filepath.Join(androidToolHelper.androidHome, "extras/google/google_play_services")
+	googlePlayServicesPath := filepath.Join(m.androidHome, "extras/google/google_play_services")
 
-	exist, err := pathutil.IsPathExists(googlePlayServicesPath)
-	if err != nil {
-		return false, err
-	}
-
-	return exist, nil
+	return pathutil.IsPathExists(googlePlayServicesPath)
 }
 
 // InstallSDKVersion ...
-func (androidToolHelper AndroidToolHelperModel) InstallSDKVersion(v *version.Version) error {
+func (m Model) InstallSDKVersion(v *version.Version) error {
 	/*
 		id: 33 or "android-25"
 			Type: Platform
@@ -108,13 +82,15 @@ func (androidToolHelper AndroidToolHelperModel) InstallSDKVersion(v *version.Ver
 	// $ANDROID_HOME/platforms/android-23
 	sdkMajorVersion := v.Segments()[0]
 	sdkMajorVersionStr := strconv.Itoa(sdkMajorVersion)
+
 	sdkFilter := "android-" + sdkMajorVersionStr
 	cmdSlice := androidInstallCmdSlice(sdkFilter)
+
 	return runAndroidInstallCmdSlice(cmdSlice)
 }
 
 // InstallBuildToolsVersion ...
-func (androidToolHelper AndroidToolHelperModel) InstallBuildToolsVersion(v *version.Version) error {
+func (m Model) InstallBuildToolsVersion(v *version.Version) error {
 	/*
 		id: 3 or "build-tools-25.0.2"
 			Type: BuildTool
@@ -124,11 +100,12 @@ func (androidToolHelper AndroidToolHelperModel) InstallBuildToolsVersion(v *vers
 	// $ANDROID_HOME/build-tools/23.0.3
 	sdkFilter := "build-tools-" + v.String()
 	cmdSlice := androidInstallCmdSlice(sdkFilter)
+
 	return runAndroidInstallCmdSlice(cmdSlice)
 }
 
 // UpdateSupportLibrary ...
-func (androidToolHelper AndroidToolHelperModel) UpdateSupportLibrary() error {
+func (m Model) UpdateSupportLibrary() error {
 	/*
 		id: 166 or "extra-android-m2repository"
 			Type: Extra
@@ -141,6 +118,7 @@ func (androidToolHelper AndroidToolHelperModel) UpdateSupportLibrary() error {
 	// $ANDROID_HOME/extras/android/m2repository/com/android/support
 	androidM2RepositoryFilter := "extra-android-m2repository"
 	androidM2RepositoryCmdSlice := androidInstallCmdSlice(androidM2RepositoryFilter)
+
 	if err := runAndroidInstallCmdSlice(androidM2RepositoryCmdSlice); err != nil {
 		return err
 	}
@@ -157,11 +135,12 @@ func (androidToolHelper AndroidToolHelperModel) UpdateSupportLibrary() error {
 	// $ANDROID_HOME/extras/google/m2repository/com/google/android/support
 	googleM2RepositoryFilter := "extra-google-m2repository"
 	googleM2RepositoryCmdSlice := androidInstallCmdSlice(googleM2RepositoryFilter)
+
 	return runAndroidInstallCmdSlice(googleM2RepositoryCmdSlice)
 }
 
 // UpdateGooglePlayServices ...
-func (androidToolHelper AndroidToolHelperModel) UpdateGooglePlayServices() error {
+func (m Model) UpdateGooglePlayServices() error {
 	/*
 		id: 172 or "extra-google-google_play_services"
 			Type: Extra
@@ -174,6 +153,7 @@ func (androidToolHelper AndroidToolHelperModel) UpdateGooglePlayServices() error
 	// $ANDROID_HOME/extras/google/google_play_services
 	googlePlayServicesFilter := "extra-google-google_play_services"
 	googlePlayServicesCmdSlice := androidInstallCmdSlice(googlePlayServicesFilter)
+
 	return runAndroidInstallCmdSlice(googlePlayServicesCmdSlice)
 }
 

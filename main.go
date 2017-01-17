@@ -23,12 +23,14 @@ const (
 type ConfigsModel struct {
 	SourceDir                           string
 	UpdateSupportLibraryAndPlayServices string
+	AndroidHome                         string
 }
 
 func createConfigsModelFromEnvs() ConfigsModel {
 	return ConfigsModel{
 		SourceDir:                           os.Getenv("source_dir"),
 		UpdateSupportLibraryAndPlayServices: os.Getenv("update_support_library_and_play_services"),
+		AndroidHome:                         os.Getenv("ANDROID_HOME"),
 	}
 }
 
@@ -37,6 +39,7 @@ func (configs ConfigsModel) print() {
 
 	log.Printf("- SourceDir: %s", configs.SourceDir)
 	log.Printf("- UpdateSupportLibraryAndPlayServices: %s", configs.UpdateSupportLibraryAndPlayServices)
+	log.Printf("- AndroidHome: %s", configs.AndroidHome)
 }
 
 func (configs ConfigsModel) validate() error {
@@ -51,6 +54,13 @@ func (configs ConfigsModel) validate() error {
 
 	if configs.UpdateSupportLibraryAndPlayServices == "" {
 		return errors.New("no UpdateSupportLibraryAndPlayServices parameter specified")
+	}
+	if configs.UpdateSupportLibraryAndPlayServices != "true" && configs.UpdateSupportLibraryAndPlayServices != "false" {
+		return fmt.Errorf("invalid UpdateSupportLibraryAndPlayServices provided: %s, vaialable: [true false]", configs.UpdateSupportLibraryAndPlayServices)
+	}
+
+	if configs.AndroidHome == "" {
+		return fmt.Errorf("no ANDROID_HOME set")
 	}
 
 	return nil
@@ -184,7 +194,7 @@ func main() {
 			failf("Failed to read build.gradle file at: %s, error: %s", buildGradleFile, err)
 		}
 
-		dependencies, err := analyzer.NewProjectDependenciesModel(content)
+		dependencies, err := analyzer.NewProjectDependencies(content)
 		if err != nil {
 			log.Errorf("Failed to parse build.gradle at: %s", buildGradleFile)
 			continue
@@ -199,10 +209,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure dependencies")
 
-	toolHelper, err := installer.NewAndroidToolHelperModel()
-	if err != nil {
-		failf("Failed to create tool helper, error: %s", err)
-	}
+	toolHelper := installer.New(configs.AndroidHome)
 
 	isSupportLibraryUpdated := false
 	isGooglePlayServicesUpdated := false
