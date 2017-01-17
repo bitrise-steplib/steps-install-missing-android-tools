@@ -196,7 +196,8 @@ func main() {
 
 		dependencies, err := analyzer.NewProjectDependencies(content)
 		if err != nil {
-			log.Errorf("Failed to parse build.gradle at: %s", buildGradleFile)
+			log.Errorf("Failed to parse build.gradle at: %s, error: %s", buildGradleFile, err)
+			log.Printf("content: %s", content)
 			continue
 		}
 

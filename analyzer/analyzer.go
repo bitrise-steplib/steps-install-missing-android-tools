@@ -98,7 +98,7 @@ func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error)
 	}
 
 	if compileSDKVersionStr == "" {
-		return nil, errors.New("Failed to find compileSdkVersion")
+		return nil, errors.New("failed to find compileSdkVersion")
 	}
 
 	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
@@ -129,7 +129,7 @@ func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error)
 	}
 
 	if buildToolsVersionStr == "" {
-		return nil, errors.New("Failed to find buildToolsVersion")
+		return nil, errors.New("failed to find buildToolsVersion")
 	}
 
 	buildToolsVersion, err := version.NewVersion(buildToolsVersionStr)
@@ -194,22 +194,22 @@ func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
 	compileSDKVersion, err := parseCompileSDKVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("failed to determine compileSDKVersion, error: %s", err)
 	}
 
 	buildToolsVersion, err := parseBuildToolsVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("failed to deterime buildToolsVersion, error: %s", err)
 	}
 
 	useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("failed to detemin if use supportLibrary, error: %s", err)
 	}
 
 	useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, err
+		return ProjectDependenciesModel{}, fmt.Errorf("failed to detemine if use googlePlayServices, error: %s", err)
 	}
 
 	dependencies := ProjectDependenciesModel{
