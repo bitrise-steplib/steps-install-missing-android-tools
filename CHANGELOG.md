@@ -1,6 +1,11 @@
-## Changelog (Current version: 0.9.1)
+## Changelog (Current version: 0.9.2)
 
 -----------------
+
+### 0.9.2 (2017 Jan 18)
+
+* [860c7ac] prepare for 0.9.2
+* [703d787] anaylzer test, regexp improvements (#3)
 
 ### 0.9.1 (2017 Jan 17)
 
@@ -9,4 +14,4 @@
 
 -----------------
 
-Updated: 2017 Jan 17
+Updated: 2017 Jan 18
