@@ -74,3 +74,35 @@ android {
 		require.Nil(t, v)
 	}
 }
+
+func TestParseBuildGradle(t *testing.T) {
+	t.Log("SDK21 + Tools21.0.1 + support")
+	{
+		deps, err := parseBuildGradle(testBuildGradleSDK21Tools2101FileContent)
+		require.NoError(t, err)
+		require.Equal(t, "21.0.0", deps.ComplieSDKVersion.String())
+		require.Equal(t, "21.0.1", deps.BuildToolsVersion.String())
+		require.Equal(t, true, deps.UseSupportLibrary)
+		require.Equal(t, false, deps.UseGooglePlayServices)
+	}
+
+	t.Log("SDK24 + Tools24.0.2 + support")
+	{
+		deps, err := parseBuildGradle(testBuildGradleSDK24Tools2402SupportFileContent)
+		require.NoError(t, err)
+		require.Equal(t, "24.0.0", deps.ComplieSDKVersion.String())
+		require.Equal(t, "24.0.2", deps.BuildToolsVersion.String())
+		require.Equal(t, true, deps.UseSupportLibrary)
+		require.Equal(t, false, deps.UseGooglePlayServices)
+	}
+
+	t.Log("SDK23 + Tools23.0.3 + support + play")
+	{
+		deps, err := parseBuildGradle(testBuildGradleSDK23Tools2303SupportPlayFileContent)
+		require.NoError(t, err)
+		require.Equal(t, "23.0.0", deps.ComplieSDKVersion.String())
+		require.Equal(t, "23.0.3", deps.BuildToolsVersion.String())
+		require.Equal(t, true, deps.UseSupportLibrary)
+		require.Equal(t, true, deps.UseGooglePlayServices)
+	}
+}
