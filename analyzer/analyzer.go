@@ -81,13 +81,16 @@ func ParseIncludedModules(settingsGradleContent string) ([]string, error) {
 
 func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error) {
 	//     compileSdkVersion 23
-	compileSDKVersionRegexp := regexp.MustCompile(`\s*compileSdkVersion (?P<version>.+)`)
+
+	pattern := `(?i).*compileSdkVersion\s*(?P<v>[0-9]+)`
+	re := regexp.MustCompile(pattern)
+
 	compileSDKVersionStr := ""
 
 	scanner := bufio.NewScanner(strings.NewReader(buildGradleContent))
 	for scanner.Scan() {
-		matches := compileSDKVersionRegexp.FindStringSubmatch(scanner.Text())
-		if len(matches) > 1 {
+		line := scanner.Text()
+		if matches := re.FindStringSubmatch(line); len(matches) > 1 {
 			compileSDKVersionStr = matches[1]
 			break
 		}
@@ -112,13 +115,16 @@ func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error)
 
 func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error) {
 	//     buildToolsVersion "23.0.3"
-	buildToolsVersionRegexp := regexp.MustCompile(`\s*buildToolsVersion "(?P<version>.+)"`)
+
+	pattern := `(?i).*buildToolsVersion\s*["']+(?P<v>[0-9.]+)["']+`
+	re := regexp.MustCompile(pattern)
+
 	buildToolsVersionStr := ""
 
 	scanner := bufio.NewScanner(strings.NewReader(buildGradleContent))
 	for scanner.Scan() {
-		matches := buildToolsVersionRegexp.FindStringSubmatch(scanner.Text())
-		if len(matches) > 1 {
+		line := scanner.Text()
+		if matches := re.FindStringSubmatch(line); len(matches) > 1 {
 			buildToolsVersionStr = matches[1]
 			break
 		}
@@ -144,18 +150,16 @@ func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error)
 func parseUseSupportLibrary(buildGradleContent string) (bool, error) {
 	//     compile "com.android.support:appcompat-v7:23.4.0"
 	//     compile "com.android.support:23.4.0"
-	supportLibraryVersionRegexp := regexp.MustCompile(`\s*compile\s*\"com.android.support:(?P<tool>.[^:]*):*(?P<version>.*)\"`)
-	supportLibraryVersionStr := ""
+	//     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+
+	pattern := `(?i).*compile.*['"]+com.android.support.*['"]+`
+	re := regexp.MustCompile(pattern)
 
 	scanner := bufio.NewScanner(strings.NewReader(buildGradleContent))
 	for scanner.Scan() {
-		matches := supportLibraryVersionRegexp.FindStringSubmatch(scanner.Text())
-		if len(matches) > 2 {
-			supportLibraryVersionStr = matches[2]
-			break
-		} else if len(matches) > 1 {
-			supportLibraryVersionStr = matches[1]
-			break
+		line := scanner.Text()
+		if match := re.FindString(line); match != "" {
+			return true, nil
 		}
 	}
 
@@ -163,24 +167,20 @@ func parseUseSupportLibrary(buildGradleContent string) (bool, error) {
 		return false, err
 	}
 
-	return (supportLibraryVersionStr != ""), nil
+	return false, nil
 }
 
 func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 	//     compile "com.google.android.gms:play-services-location:7.8.0"
-	//     compile "com.google.android.gms:7.8.0"
-	googlePlayServicesVersionRegexp := regexp.MustCompile(`\s*compile\s*\"com.google.android.gms:(?P<tool>.[^:]*):*(?P<version>.*)\"`)
-	googlePlayServicesVersionStr := ""
+
+	pattern := `(?i).*compile.*['"]+com.google.android.gms.*play-services.*['"]+`
+	re := regexp.MustCompile(pattern)
 
 	scanner := bufio.NewScanner(strings.NewReader(buildGradleContent))
 	for scanner.Scan() {
-		matches := googlePlayServicesVersionRegexp.FindStringSubmatch(scanner.Text())
-		if len(matches) > 2 {
-			googlePlayServicesVersionStr = matches[2]
-			break
-		} else if len(matches) > 1 {
-			googlePlayServicesVersionStr = matches[1]
-			break
+		line := scanner.Text()
+		if match := re.FindString(line); match != "" {
+			return true, nil
 		}
 	}
 
@@ -188,7 +188,7 @@ func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 		return false, err
 	}
 
-	return (googlePlayServicesVersionStr != ""), nil
+	return false, nil
 }
 
 func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
