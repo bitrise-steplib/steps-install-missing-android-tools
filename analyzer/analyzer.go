@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/hashicorp/go-version"
 )
 
@@ -16,26 +18,80 @@ import (
 
 // ProjectDependenciesModel ...
 type ProjectDependenciesModel struct {
-	ComplieSDKVersion *version.Version
-	BuildToolsVersion *version.Version
+	ComplieSDKVersion string
+	BuildToolsVersion string
 
 	UseSupportLibrary     bool
 	UseGooglePlayServices bool
 }
 
 // NewProjectDependencies ...
-func NewProjectDependencies(buildGradleContent string) (ProjectDependenciesModel, error) {
-	return parseBuildGradle(buildGradleContent)
+func NewProjectDependencies(buildGradleContent, gradlewPath string) (ProjectDependenciesModel, error) {
+	complieSDKVersion, buildToolsVersion, err := parseBuildGradle(buildGradleContent)
+	if err != nil {
+		return ProjectDependenciesModel{}, err
+	}
+
+	cmd := command.New(gradlewPath, "androidDependencies")
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		if errorutil.IsExitStatusError(err) {
+			return ProjectDependenciesModel{}, errors.New(out)
+		}
+		return ProjectDependenciesModel{}, err
+	}
+
+	useSupportLibrary, useGooglePlayServices, err := parseAndroidDependencies(out)
+	if err != nil {
+		return ProjectDependenciesModel{}, err
+	}
+
+	return ProjectDependenciesModel{
+		ComplieSDKVersion:     complieSDKVersion,
+		BuildToolsVersion:     buildToolsVersion,
+		UseSupportLibrary:     useSupportLibrary,
+		UseGooglePlayServices: useGooglePlayServices,
+	}, nil
+}
+
+func parseAndroidDependencies(out string) (bool, bool, error) {
+	useSupportLibrary := false
+	useGooglePlayServices := false
+
+	supportLibrarayPattern := "com.android.support:support"
+	googlePlayServicesPattern := "com.google.android.gms:play-services"
+
+	reader := strings.NewReader(out)
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, supportLibrarayPattern) {
+			useSupportLibrary = true
+			continue
+		}
+		if strings.Contains(line, googlePlayServicesPattern) {
+			useGooglePlayServices = true
+			continue
+		}
+		if useSupportLibrary && useGooglePlayServices {
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return false, false, err
+	}
+
+	return useSupportLibrary, useGooglePlayServices, nil
 }
 
 // String ...
 func (projectDepencies ProjectDependenciesModel) String() string {
 	outStr := ""
-	if projectDepencies.ComplieSDKVersion != nil {
-		outStr += fmt.Sprintf("  compileSdkVersion: %s\n", projectDepencies.ComplieSDKVersion.String())
+	if projectDepencies.ComplieSDKVersion != "" {
+		outStr += fmt.Sprintf("  compileSdkVersion: %s\n", projectDepencies.ComplieSDKVersion)
 	}
-	if projectDepencies.BuildToolsVersion != nil {
-		outStr += fmt.Sprintf("  buildToolsVersion: %s\n", projectDepencies.BuildToolsVersion.String())
+	if projectDepencies.BuildToolsVersion != "" {
+		outStr += fmt.Sprintf("  buildToolsVersion: %s\n", projectDepencies.BuildToolsVersion)
 	}
 
 	outStr += fmt.Sprintf("  uses Support Library: %v\n", projectDepencies.UseSupportLibrary)
@@ -79,7 +135,7 @@ func ParseIncludedModules(settingsGradleContent string) ([]string, error) {
 // --- Functions
 // -----------------------
 
-func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error) {
+func parseCompileSDKVersion(buildGradleContent string) (string, error) {
 	//     compileSdkVersion 23
 
 	pattern := `(?i).*compileSdkVersion\s*(?P<v>[0-9]+)`
@@ -95,25 +151,23 @@ func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error)
 			break
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if compileSDKVersionStr == "" {
-		return nil, errors.New("failed to find compileSdkVersion")
+		return "", errors.New("failed to find compileSdkVersion")
 	}
 
-	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
-	if err != nil {
+	if _, err := version.NewVersion(compileSDKVersionStr); err != nil {
 		// Possible defined with variable
-		return nil, fmt.Errorf("failed to parse compileSdkVersion (%s), error: %s", compileSDKVersionStr, err)
+		return "", fmt.Errorf("failed to parse compileSdkVersion (%s), error: %s", compileSDKVersionStr, err)
 	}
 
-	return compileSDKVesrion, nil
+	return compileSDKVersionStr, nil
 }
 
-func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error) {
+func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 	//     buildToolsVersion "23.0.3"
 
 	pattern := `(?i).*buildToolsVersion\s*["']+(?P<v>[0-9.]+)["']+`
@@ -129,96 +183,32 @@ func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error)
 			break
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if buildToolsVersionStr == "" {
-		return nil, errors.New("failed to find buildToolsVersion")
+		return "", errors.New("failed to find buildToolsVersion")
 	}
 
-	buildToolsVersion, err := version.NewVersion(buildToolsVersionStr)
-	if err != nil {
+	if _, err := version.NewVersion(buildToolsVersionStr); err != nil {
 		// Possible defined with variable
-		return nil, fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersionStr, err)
+		return "", fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersionStr, err)
 	}
 
-	return buildToolsVersion, nil
+	return buildToolsVersionStr, nil
 }
 
-func parseUseSupportLibrary(buildGradleContent string) (bool, error) {
-	//     compile "com.android.support:appcompat-v7:23.4.0"
-	//     compile "com.android.support:23.4.0"
-	//     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-
-	pattern := `(?i).*compile.*['"]+com.android.support.*['"]+`
-	re := regexp.MustCompile(pattern)
-
-	scanner := bufio.NewScanner(strings.NewReader(buildGradleContent))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if match := re.FindString(line); match != "" {
-			return true, nil
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return false, err
-	}
-
-	return false, nil
-}
-
-func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
-	//     compile "com.google.android.gms:play-services-location:7.8.0"
-
-	pattern := `(?i).*compile.*['"]+com.google.android.gms.*play-services.*['"]+`
-	re := regexp.MustCompile(pattern)
-
-	scanner := bufio.NewScanner(strings.NewReader(buildGradleContent))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if match := re.FindString(line); match != "" {
-			return true, nil
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return false, err
-	}
-
-	return false, nil
-}
-
-func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
+func parseBuildGradle(buildGradleContent string) (string, string, error) {
 	compileSDKVersion, err := parseCompileSDKVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to determine compileSDKVersion, error: %s", err)
+		return "", "", err
 	}
 
 	buildToolsVersion, err := parseBuildToolsVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to deterime buildToolsVersion, error: %s", err)
+		return "", "", err
 	}
 
-	useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
-	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to detemin if use supportLibrary, error: %s", err)
-	}
-
-	useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
-	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to detemine if use googlePlayServices, error: %s", err)
-	}
-
-	dependencies := ProjectDependenciesModel{
-		ComplieSDKVersion: compileSDKVersion,
-		BuildToolsVersion: buildToolsVersion,
-
-		UseSupportLibrary:     useSupportLibrary,
-		UseGooglePlayServices: useGooglePlayServices,
-	}
-
-	return dependencies, nil
+	return compileSDKVersion, buildToolsVersion, nil
 }

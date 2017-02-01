@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bitrise-core/bitrise-init/utility"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -22,6 +21,7 @@ const (
 // ConfigsModel ...
 type ConfigsModel struct {
 	RootBuildGradleFile                 string
+	GradlewPath                         string
 	UpdateSupportLibraryAndPlayServices string
 	AndroidHome                         string
 }
@@ -29,6 +29,7 @@ type ConfigsModel struct {
 func createConfigsModelFromEnvs() ConfigsModel {
 	return ConfigsModel{
 		RootBuildGradleFile:                 os.Getenv("root_build_gradle_file"),
+		GradlewPath:                         os.Getenv("gradlew_path"),
 		UpdateSupportLibraryAndPlayServices: os.Getenv("update_support_library_and_play_services"),
 		AndroidHome:                         os.Getenv("ANDROID_HOME"),
 	}
@@ -36,8 +37,8 @@ func createConfigsModelFromEnvs() ConfigsModel {
 
 func (configs ConfigsModel) print() {
 	log.Infof("Configs:")
-
 	log.Printf("- RootBuildGradleFile: %s", configs.RootBuildGradleFile)
+	log.Printf("- GradlewPath: %s", configs.GradlewPath)
 	log.Printf("- UpdateSupportLibraryAndPlayServices: %s", configs.UpdateSupportLibraryAndPlayServices)
 	log.Printf("- AndroidHome: %s", configs.AndroidHome)
 }
@@ -50,6 +51,15 @@ func (configs ConfigsModel) validate() error {
 		return fmt.Errorf("failed to check if RootBuildGradleFile exist at: %s, error: %s", configs.RootBuildGradleFile, err)
 	} else if !exist {
 		return fmt.Errorf("RootBuildGradleFile not exist at: %s", configs.RootBuildGradleFile)
+	}
+
+	if configs.GradlewPath == "" {
+		return errors.New("no GradlewPath parameter specified")
+	}
+	if exist, err := pathutil.IsPathExists(configs.GradlewPath); err != nil {
+		return fmt.Errorf("failed to check if GradlewPath exist at: %s, error: %s", configs.GradlewPath, err)
+	} else if !exist {
+		return fmt.Errorf("GradlewPath not exist at: %s", configs.GradlewPath)
 	}
 
 	if configs.UpdateSupportLibraryAndPlayServices == "" {
@@ -66,28 +76,10 @@ func (configs ConfigsModel) validate() error {
 	return nil
 }
 
-// -----------------------
-// --- Functions
-// -----------------------
-
-func filterBuildGradleFiles(fileList []string) ([]string, error) {
-	allowBuildGradleBaseFilter := utility.BaseFilter(buildGradleBasename, true)
-	gradleFiles, err := utility.FilterPaths(fileList, allowBuildGradleBaseFilter)
-	if err != nil {
-		return []string{}, err
-	}
-
-	return utility.SortPathsByComponents(gradleFiles)
-}
-
 func failf(format string, v ...interface{}) {
 	log.Errorf(format, v...)
 	os.Exit(1)
 }
-
-// -----------------------
-// --- Main
-// -----------------------
 
 func main() {
 	// Input validation
@@ -174,7 +166,7 @@ func main() {
 			failf("Failed to read build.gradle file at: %s, error: %s", buildGradleFile, err)
 		}
 
-		dependencies, err := analyzer.NewProjectDependencies(content)
+		dependencies, err := analyzer.NewProjectDependencies(content, configs.GradlewPath)
 		if err != nil {
 			log.Errorf("Failed to parse build.gradle at: %s, error: %s", buildGradleFile, err)
 			log.Printf("content: %s", content)
@@ -200,31 +192,31 @@ func main() {
 		log.Printf("Checking compileSdkVersion: %s", dependencies.ComplieSDKVersion)
 
 		if installed, err := toolHelper.IsSDKVersionInstalled(dependencies.ComplieSDKVersion); err != nil {
-			failf("Failed to check if sdk version (%s) installed, error: %s", dependencies.ComplieSDKVersion.String(), err)
+			failf("Failed to check if sdk version (%s) installed, error: %s", dependencies.ComplieSDKVersion, err)
 		} else if !installed {
-			log.Printf("compileSdkVersion: %s not installed", dependencies.ComplieSDKVersion.String())
+			log.Printf("compileSdkVersion: %s not installed", dependencies.ComplieSDKVersion)
 
 			if err := toolHelper.InstallSDKVersion(dependencies.ComplieSDKVersion); err != nil {
-				failf("Failed to install sdk version (%s), error: %s", dependencies.ComplieSDKVersion.String(), err)
+				failf("Failed to install sdk version (%s), error: %s", dependencies.ComplieSDKVersion, err)
 			}
 		}
 
-		log.Donef("compileSdkVersion: %s installed", dependencies.ComplieSDKVersion.String())
+		log.Donef("compileSdkVersion: %s installed", dependencies.ComplieSDKVersion)
 
 		// Ensure build-tool
 		log.Printf("Checking buildToolsVersion: %s", dependencies.BuildToolsVersion)
 
 		if installed, err := toolHelper.IsBuildToolsInstalled(dependencies.BuildToolsVersion); err != nil {
-			failf("Failed to check if build-tools (%s) installed, error: %s", dependencies.BuildToolsVersion.String(), err)
+			failf("Failed to check if build-tools (%s) installed, error: %s", dependencies.BuildToolsVersion, err)
 		} else if !installed {
-			log.Printf("buildToolsVersion: %s not installed", dependencies.BuildToolsVersion.String())
+			log.Printf("buildToolsVersion: %s not installed", dependencies.BuildToolsVersion)
 
 			if err := toolHelper.InstallBuildToolsVersion(dependencies.BuildToolsVersion); err != nil {
-				failf("Failed to install build-tools version (%s), error: %s", dependencies.BuildToolsVersion.String(), err)
+				failf("Failed to install build-tools version (%s), error: %s", dependencies.BuildToolsVersion, err)
 			}
 		}
 
-		log.Donef("buildToolsVersion: %s installed", dependencies.BuildToolsVersion.String())
+		log.Donef("buildToolsVersion: %s installed", dependencies.BuildToolsVersion)
 
 		// Ensure support-library
 		if dependencies.UseSupportLibrary && configs.UpdateSupportLibraryAndPlayServices == "true" && !isSupportLibraryUpdated {

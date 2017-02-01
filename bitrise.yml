@@ -5,7 +5,7 @@ app:
   envs:
   - STEP_VERSION: "0.9.2"
 
-  # define these in your .bitrise.secrets.yml
+  - GRADLEW_PATH: ./gradlew
   - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-sdk21-tools-21.0.1.git
 
 workflows:
@@ -45,13 +45,13 @@ workflows:
     - go-tests
     after_run:
     - test_android-sdk21-tools-21.0.1
-    - test_android-sdk22-no-gradlew
     - test_android-sdk20
     - test_android-sdk22-subdir
 
   test_android-sdk21-tools-21.0.1:
     envs:
     - GRADLE_BUILD_FILE_PATH: build.gradle
+    - GRADLEW_PATH: ./gradlew
     steps:
     - script:
         inputs:
@@ -78,38 +78,10 @@ workflows:
     - path::./:
         title: Step test
 
-  test_android-sdk22-no-gradlew:
-    envs:
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -e
-            rm -rf ./_tmp
-    - change-workdir:
-        title: Switch working dir to test / _tmp dir
-        run_if: true
-        inputs:
-        - path: ./_tmp
-        - is_create_path: true
-    - git-clone:
-        run_if: true
-        inputs:
-        - repository_url: https://github.com/bitrise-samples/android-sdk22-no-gradlew.git
-        - clone_into_dir: ./
-        - commit: ""
-        - tag: ""
-        - branch: "master"
-        - pull_request_id: ""
-        - clone_depth: ""
-    - path::./:
-        title: Step test
-
   test_android-sdk20:
     envs:
     - GRADLE_BUILD_FILE_PATH: build.gradle
+    - GRADLEW_PATH: ./gradlew
     steps:
     - script:
         inputs:
@@ -139,6 +111,7 @@ workflows:
   test_android-sdk22-subdir:
     envs:
     - GRADLE_BUILD_FILE_PATH: src/build.gradle
+    - GRADLEW_PATH: ./src/gradlew
     steps:
     - script:
         inputs:

@@ -38,6 +38,17 @@ inputs:
       description: |-
         Path to the root build.gradle file. 
       is_required: true
+  - gradlew_path: $GRADLEW_PATH
+    opts:
+      title: gradlew file path
+      description: |
+        Using a Gradle Wrapper (gradlew) is required, as the wrapper is what makes sure
+        that the right Gradle version is installed and used for the build.
+
+        __You can find more information about the Gradle Wrapper (gradlew),
+        and about how you can generate one (if you would not have one already)__
+        in the official guide at: [https://docs.gradle.org/current/userguide/gradle_wrapper.html](https://docs.gradle.org/current/userguide/gradle_wrapper.html).
+      is_required: true
   - update_support_library_and_play_services: "true"
     opts:
       title: "Should the step update `Support Library` and `Google Play Services`"
