@@ -10,13 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"strconv"
-
 	"github.com/bitrise-io/depman/pathutil"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/hashicorp/go-version"
 )
 
 // -----------------------
@@ -36,20 +33,18 @@ func New(androidHome string) Model {
 }
 
 // IsSDKVersionInstalled ...
-func (m Model) IsSDKVersionInstalled(v *version.Version) (bool, error) {
+func (m Model) IsSDKVersionInstalled(sdkVersion string) (bool, error) {
 	// $ANDROID_HOME/platforms/android-23
-	sdkMajorVersion := v.Segments()[0]
-
-	sdkFolderName := fmt.Sprintf("android-%d", sdkMajorVersion)
+	sdkFolderName := "android-" + sdkVersion
 	sdkPath := filepath.Join(m.androidHome, "platforms", sdkFolderName)
 
 	return pathutil.IsPathExists(sdkPath)
 }
 
 // IsBuildToolsInstalled ...
-func (m Model) IsBuildToolsInstalled(v *version.Version) (bool, error) {
+func (m Model) IsBuildToolsInstalled(buildToolsVersion string) (bool, error) {
 	// $ANDROID_HOME/build-tools/23.0.3
-	buildToolsPath := filepath.Join(m.androidHome, "build-tools", v.String())
+	buildToolsPath := filepath.Join(m.androidHome, "build-tools", buildToolsVersion)
 
 	return pathutil.IsPathExists(buildToolsPath)
 }
@@ -71,7 +66,7 @@ func (m Model) IsGooglePlayServicesInstalled() (bool, error) {
 }
 
 // InstallSDKVersion ...
-func (m Model) InstallSDKVersion(v *version.Version) error {
+func (m Model) InstallSDKVersion(sdkVersion string) error {
 	/*
 		id: 33 or "android-25"
 			Type: Platform
@@ -80,17 +75,14 @@ func (m Model) InstallSDKVersion(v *version.Version) error {
 	*/
 
 	// $ANDROID_HOME/platforms/android-23
-	sdkMajorVersion := v.Segments()[0]
-	sdkMajorVersionStr := strconv.Itoa(sdkMajorVersion)
-
-	sdkFilter := "android-" + sdkMajorVersionStr
+	sdkFilter := "android-" + sdkVersion
 	cmdSlice := androidInstallCmdSlice(sdkFilter)
 
 	return runAndroidInstallCmdSlice(cmdSlice)
 }
 
 // InstallBuildToolsVersion ...
-func (m Model) InstallBuildToolsVersion(v *version.Version) error {
+func (m Model) InstallBuildToolsVersion(buildToolsVersion string) error {
 	/*
 		id: 3 or "build-tools-25.0.2"
 			Type: BuildTool
@@ -98,7 +90,7 @@ func (m Model) InstallBuildToolsVersion(v *version.Version) error {
 	*/
 
 	// $ANDROID_HOME/build-tools/23.0.3
-	sdkFilter := "build-tools-" + v.String()
+	sdkFilter := "build-tools-" + buildToolsVersion
 	cmdSlice := androidInstallCmdSlice(sdkFilter)
 
 	return runAndroidInstallCmdSlice(cmdSlice)
