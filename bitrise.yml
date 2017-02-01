@@ -111,7 +111,7 @@ workflows:
   test_android-sdk22-subdir:
     envs:
     - GRADLE_BUILD_FILE_PATH: src/build.gradle
-    - GRADLEW_PATH: ./gradlew
+    - GRADLEW_PATH: ./src/gradlew
     steps:
     - script:
         inputs:

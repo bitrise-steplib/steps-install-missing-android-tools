@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/hashicorp/go-version"
 )
 
@@ -34,6 +35,9 @@ func NewProjectDependencies(buildGradleContent, gradlewPath string) (ProjectDepe
 	cmd := command.New(gradlewPath, "androidDependencies")
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
+		if errorutil.IsExitStatusError(err) {
+			return ProjectDependenciesModel{}, errors.New(out)
+		}
 		return ProjectDependenciesModel{}, err
 	}
 
@@ -147,7 +151,6 @@ func parseCompileSDKVersion(buildGradleContent string) (string, error) {
 			break
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
 		return "", err
 	}
@@ -180,7 +183,6 @@ func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 			break
 		}
 	}
-
 	if err := scanner.Err(); err != nil {
 		return "", err
 	}
