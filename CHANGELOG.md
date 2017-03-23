@@ -1,6 +1,12 @@
-## Changelog (Current version: 0.9.2)
+## Changelog (Current version: 1.0.0)
 
 -----------------
+
+### 1.0.0 (2017 Mar 23)
+
+* [a94a1b8] prepare for 1.0.0
+* [b83bfd6] extended analyzer (#8)
+* [efdfe9b] go-android packages (#7)
 
 ### 0.9.2 (2017 Jan 18)
 
@@ -14,4 +20,4 @@
 
 -----------------
 
-Updated: 2017 Jan 18
+Updated: 2017 Mar 23
