@@ -28,10 +28,10 @@ android {
     buildToolsVersion "23.0.3"
 }
 `
-		v, err := parseCompileSDKVersion(content)
+		v, err := parsePlatformVersion(content)
 		require.NoError(t, err)
 		require.NotNil(t, v)
-		require.Equal(t, "23.0.0", v.String())
+		require.Equal(t, "android-23", v)
 	}
 
 	t.Log("no compileSdkVersion")
@@ -41,9 +41,9 @@ android {
     buildToolsVersion "23.0.3"
 }
 `
-		v, err := parseCompileSDKVersion(content)
+		v, err := parsePlatformVersion(content)
 		require.Error(t, err)
-		require.Nil(t, v)
+		require.Equal(t, "", v)
 	}
 }
 
@@ -59,7 +59,7 @@ android {
 		v, err := parseBuildToolsVersion(content)
 		require.NoError(t, err)
 		require.NotNil(t, v)
-		require.Equal(t, "23.0.3", v.String())
+		require.Equal(t, "23.0.3", v)
 	}
 
 	t.Log("no compileSdkVersion")
@@ -71,7 +71,7 @@ android {
 `
 		v, err := parseBuildToolsVersion(content)
 		require.Error(t, err)
-		require.Nil(t, v)
+		require.Equal(t, "", v)
 	}
 }
 
@@ -80,8 +80,8 @@ func TestParseBuildGradle(t *testing.T) {
 	{
 		deps, err := parseBuildGradle(testBuildGradleSDK21Tools2101FileContent)
 		require.NoError(t, err)
-		require.Equal(t, "21.0.0", deps.ComplieSDKVersion.String())
-		require.Equal(t, "21.0.1", deps.BuildToolsVersion.String())
+		require.Equal(t, "android-21", deps.PlatformVersion)
+		require.Equal(t, "21.0.1", deps.BuildToolsVersion)
 		require.Equal(t, true, deps.UseSupportLibrary)
 		require.Equal(t, false, deps.UseGooglePlayServices)
 	}
@@ -90,8 +90,8 @@ func TestParseBuildGradle(t *testing.T) {
 	{
 		deps, err := parseBuildGradle(testBuildGradleSDK24Tools2402SupportFileContent)
 		require.NoError(t, err)
-		require.Equal(t, "24.0.0", deps.ComplieSDKVersion.String())
-		require.Equal(t, "24.0.2", deps.BuildToolsVersion.String())
+		require.Equal(t, "android-24", deps.PlatformVersion)
+		require.Equal(t, "24.0.2", deps.BuildToolsVersion)
 		require.Equal(t, true, deps.UseSupportLibrary)
 		require.Equal(t, false, deps.UseGooglePlayServices)
 	}
@@ -100,8 +100,8 @@ func TestParseBuildGradle(t *testing.T) {
 	{
 		deps, err := parseBuildGradle(testBuildGradleSDK23Tools2303SupportPlayFileContent)
 		require.NoError(t, err)
-		require.Equal(t, "23.0.0", deps.ComplieSDKVersion.String())
-		require.Equal(t, "23.0.3", deps.BuildToolsVersion.String())
+		require.Equal(t, "android-23", deps.PlatformVersion)
+		require.Equal(t, "23.0.3", deps.BuildToolsVersion)
 		require.Equal(t, true, deps.UseSupportLibrary)
 		require.Equal(t, true, deps.UseGooglePlayServices)
 	}

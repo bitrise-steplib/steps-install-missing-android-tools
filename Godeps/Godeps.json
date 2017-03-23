@@ -1,47 +1,51 @@
 {
 	"ImportPath": "github.com/bitrise-steplib/steps-install-missing-android-tools",
-	"GoVersion": "go1.7",
-	"GodepVersion": "v77",
+	"GoVersion": "go1.8",
+	"GodepVersion": "v79",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/bitrise-core/bitrise-init/utility",
-			"Comment": "0.12.0-3-g579eae8",
-			"Rev": "579eae8ef9b4c7fecf840fc0c917bb1c2cfe9768"
-		},
-		{
-			"ImportPath": "github.com/bitrise-io/depman/pathutil",
-			"Rev": "4c59bc31f02a2ae78ce5d8d96a006289cd3e6beb"
+			"Comment": "1.1.3-5-g76885b9",
+			"Rev": "76885b90dabbf8622d1bf25a78cc45e31b186c1c"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/colorstring",
-			"Rev": "e9b911a4cdf5eda62401973d0c299e7e42637315"
+			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/command",
-			"Rev": "e9b911a4cdf5eda62401973d0c299e7e42637315"
+			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/errorutil",
-			"Rev": "e9b911a4cdf5eda62401973d0c299e7e42637315"
+			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/fileutil",
-			"Rev": "e9b911a4cdf5eda62401973d0c299e7e42637315"
+			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/log",
-			"Rev": "e9b911a4cdf5eda62401973d0c299e7e42637315"
+			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/pathutil",
-			"Rev": "e9b911a4cdf5eda62401973d0c299e7e42637315"
+			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
+		},
+		{
+			"ImportPath": "github.com/bitrise-tools/go-android/sdkcomponent",
+			"Rev": "d63efd1fe12c3281b57cb00d35b30dbd1e642e80"
+		},
+		{
+			"ImportPath": "github.com/bitrise-tools/go-android/sdkmanager",
+			"Rev": "d63efd1fe12c3281b57cb00d35b30dbd1e642e80"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-xcode/xcodeproj",
-			"Rev": "de85d931f9d126c24867022f6f84ea00dd877f5c"
+			"Rev": "2dfa286d87ca7ef6e52f871de262de29e7129845"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
@@ -50,7 +54,7 @@
 		},
 		{
 			"ImportPath": "github.com/hashicorp/go-version",
-			"Rev": "deeb027c13a95d56c7585df3fe29207208c6706e"
+			"Rev": "03c5bf6be031b6dd45afec16b1cf94fc8938bc77"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
@@ -59,13 +63,13 @@
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.1.4-25-g2402e8e",
-			"Rev": "2402e8e7a02fc811447d11f881aa9746cdc57983"
+			"Comment": "v1.1.4-27-g4d4bfba",
+			"Rev": "4d4bfba8f1d1027c4fdbe371823030df51419987"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/require",
-			"Comment": "v1.1.4-25-g2402e8e",
-			"Rev": "2402e8e7a02fc811447d11f881aa9746cdc57983"
+			"Comment": "v1.1.4-27-g4d4bfba",
+			"Rev": "4d4bfba8f1d1027c4fdbe371823030df51419987"
 		}
 	]
 }
