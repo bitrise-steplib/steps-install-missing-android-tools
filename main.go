@@ -24,6 +24,7 @@ const (
 // ConfigsModel ...
 type ConfigsModel struct {
 	RootBuildGradleFile                 string
+	GradlewPath                         string
 	UpdateSupportLibraryAndPlayServices string
 	AndroidHome                         string
 }
@@ -31,6 +32,7 @@ type ConfigsModel struct {
 func createConfigsModelFromEnvs() ConfigsModel {
 	return ConfigsModel{
 		RootBuildGradleFile:                 os.Getenv("root_build_gradle_file"),
+		GradlewPath:                         os.Getenv("gradlew_path"),
 		UpdateSupportLibraryAndPlayServices: os.Getenv("update_support_library_and_play_services"),
 		AndroidHome:                         os.Getenv("ANDROID_HOME"),
 	}
@@ -40,6 +42,7 @@ func (configs ConfigsModel) print() {
 	log.Infof("Configs:")
 
 	log.Printf("- RootBuildGradleFile: %s", configs.RootBuildGradleFile)
+	log.Printf("- GradlewPath: %s", configs.GradlewPath)
 	log.Printf("- UpdateSupportLibraryAndPlayServices: %s", configs.UpdateSupportLibraryAndPlayServices)
 	log.Printf("- AndroidHome: %s", configs.AndroidHome)
 }
@@ -52,6 +55,15 @@ func (configs ConfigsModel) validate() error {
 		return fmt.Errorf("failed to check if RootBuildGradleFile exist at: %s, error: %s", configs.RootBuildGradleFile, err)
 	} else if !exist {
 		return fmt.Errorf("RootBuildGradleFile not exist at: %s", configs.RootBuildGradleFile)
+	}
+
+	if configs.GradlewPath == "" {
+		return errors.New("no GradlewPath parameter specified")
+	}
+	if exist, err := pathutil.IsPathExists(configs.GradlewPath); err != nil {
+		return fmt.Errorf("failed to check if GradlewPath exist at: %s, error: %s", configs.GradlewPath, err)
+	} else if !exist {
+		return fmt.Errorf("GradlewPath not exist at: %s", configs.GradlewPath)
 	}
 
 	if configs.UpdateSupportLibraryAndPlayServices == "" {
@@ -171,15 +183,9 @@ func main() {
 	for _, buildGradleFile := range buildGradleFilesToAnalyze {
 		log.Printf("Analyze build.gradle file: %s", buildGradleFile)
 
-		content, err := fileutil.ReadStringFromFile(buildGradleFile)
-		if err != nil {
-			failf("Failed to read build.gradle file at: %s, error: %s", buildGradleFile, err)
-		}
-
-		dependencies, err := analyzer.NewProjectDependencies(content)
+		dependencies, err := analyzer.NewProjectDependencies(buildGradleFile, configs.GradlewPath)
 		if err != nil {
 			log.Errorf("Failed to analyze build.gradle at: %s, error: %s", buildGradleFile, err)
-			log.Printf("content: %s", content)
 			continue
 		}
 

@@ -2,11 +2,18 @@ package analyzer
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 
+	"path/filepath"
+
+	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/fileutil"
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/hashicorp/go-version"
 )
 
@@ -24,23 +31,41 @@ type ProjectDependenciesModel struct {
 }
 
 // NewProjectDependencies ...
-func NewProjectDependencies(buildGradleContent string) (ProjectDependenciesModel, error) {
-	return parseBuildGradle(buildGradleContent)
-}
-
-// String ...
-func (projectDepencies ProjectDependenciesModel) String() string {
-	outStr := ""
-	if projectDepencies.PlatformVersion != "" {
-		outStr += fmt.Sprintf("  compileSdkVersion: %s\n", projectDepencies.PlatformVersion)
-	}
-	if projectDepencies.BuildToolsVersion != "" {
-		outStr += fmt.Sprintf("  buildToolsVersion: %s\n", projectDepencies.BuildToolsVersion)
+func NewProjectDependencies(buildGradlePth, gradlewPth string) (ProjectDependenciesModel, error) {
+	buildGradleContent, err := fileutil.ReadStringFromFile(buildGradlePth)
+	if err != nil {
+		return ProjectDependenciesModel{}, err
 	}
 
-	outStr += fmt.Sprintf("  uses Support Library: %v\n", projectDepencies.UseSupportLibrary)
-	outStr += fmt.Sprintf("  uses Google Play Services: %v\n", projectDepencies.UseGooglePlayServices)
-	return outStr
+	dependencies, err := parseBuildGradle(buildGradleContent)
+	if err != nil {
+		log.Warnf("failed to parse build gradle file: %s, error: %s", buildGradlePth, err)
+		log.Warnf("switch to extended analyzer...")
+
+		compileSDKVersion, buildToolsVersion, err := analyzeWithGradlew(buildGradlePth, gradlewPth)
+		if err != nil {
+			return ProjectDependenciesModel{}, err
+		}
+
+		useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
+		if err != nil {
+			log.Warnf("failed to detemin if use supportLibrary, error: %s", err)
+		}
+
+		useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
+		if err != nil {
+			log.Warnf("failed to detemine if use googlePlayServices, error: %s", err)
+		}
+
+		return ProjectDependenciesModel{
+			PlatformVersion:       compileSDKVersion,
+			BuildToolsVersion:     buildToolsVersion,
+			UseSupportLibrary:     useSupportLibrary,
+			UseGooglePlayServices: useGooglePlayServices,
+		}, nil
+	}
+
+	return dependencies, nil
 }
 
 // ParseIncludedModules ...
@@ -106,7 +131,6 @@ func parsePlatformVersion(buildGradleContent string) (string, error) {
 
 	_, err := version.NewVersion(compileSDKVersionStr)
 	if err != nil {
-		// Possible defined with variable
 		return "", fmt.Errorf("failed to parse compileSdkVersion (%s), error: %s", compileSDKVersionStr, err)
 	}
 
@@ -140,7 +164,6 @@ func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 
 	_, err := version.NewVersion(buildToolsVersionStr)
 	if err != nil {
-		// Possible defined with variable
 		return "", fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersionStr, err)
 	}
 
@@ -189,6 +212,80 @@ func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func analyzeWithGradlew(buildGradlePth, gradlewPth string) (string, string, error) {
+	analyzerScriptContent := `
+if (plugins.hasPlugin('com.android.application')) {
+	println 'compileSdkVersion: '+android.compileSdkVersion
+	println 'buildToolsVersion: '+android.buildToolsVersion
+}
+`
+
+	buildGradleContent, err := fileutil.ReadStringFromFile(buildGradlePth)
+	if err != nil {
+		return "", "", err
+	}
+
+	buildGradleContentWitnAnalyzerScript := buildGradleContent + analyzerScriptContent
+
+	if err := fileutil.WriteStringToFile(buildGradlePth, buildGradleContentWitnAnalyzerScript); err != nil {
+		return "", "", err
+	}
+
+	defer func() {
+		if err := fileutil.WriteStringToFile(buildGradlePth, buildGradleContent); err != nil {
+			log.Errorf("Failed to remove analyzer script from: %s, error: %s", buildGradlePth, err)
+		}
+	}()
+
+	var outBuffer bytes.Buffer
+	outWriter := io.Writer(&outBuffer)
+
+	var errBuffer bytes.Buffer
+	errWriter := io.Writer(&errBuffer)
+
+	cmd := command.New(gradlewPth, "buildEnvironment")
+	cmd.SetStdout(outWriter)
+	cmd.SetStderr(errWriter)
+	cmd.SetDir(filepath.Dir(buildGradlePth))
+
+	if err := cmd.Run(); err != nil {
+
+	}
+
+	compileSDKVersion := ""
+	buildToolsVersion := ""
+
+	reader := strings.NewReader(outBuffer.String())
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.HasPrefix(line, "compileSdkVersion: ") {
+			compileSDKVersion = strings.TrimPrefix(line, "compileSdkVersion: ")
+		}
+
+		if strings.HasPrefix(line, "buildToolsVersion: ") {
+			buildToolsVersion = strings.TrimPrefix(line, "buildToolsVersion: ")
+		}
+	}
+
+	if strings.HasPrefix(compileSDKVersion, "android-") {
+		_, err = version.NewVersion(strings.TrimPrefix(compileSDKVersion, "android-"))
+		if err != nil {
+			return "", "", fmt.Errorf("failed to parse compileSDKVersion (%s), error: %s", compileSDKVersion, err)
+		}
+	} else {
+		return "", "", fmt.Errorf("failed to parse compileSDKVersion (%s)", compileSDKVersion)
+	}
+
+	_, err = version.NewVersion(buildToolsVersion)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersion, err)
+	}
+
+	return compileSDKVersion, buildToolsVersion, nil
 }
 
 func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
