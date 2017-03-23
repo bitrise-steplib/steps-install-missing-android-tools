@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bitrise-core/bitrise-init/utility"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/analyzer"
-	"github.com/bitrise-steplib/steps-install-missing-android-tools/installer"
+	"github.com/bitrise-tools/go-android/sdkcomponent"
+	"github.com/bitrise-tools/go-android/sdkmanager"
 )
 
 const (
@@ -176,7 +178,7 @@ func main() {
 
 		dependencies, err := analyzer.NewProjectDependencies(content)
 		if err != nil {
-			log.Errorf("Failed to parse build.gradle at: %s, error: %s", buildGradleFile, err)
+			log.Errorf("Failed to analyze build.gradle at: %s, error: %s", buildGradleFile, err)
 			log.Printf("content: %s", content)
 			continue
 		}
@@ -190,48 +192,102 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure dependencies")
 
-	toolHelper := installer.New(configs.AndroidHome)
+	sdkManager, err := sdkmanager.New(configs.AndroidHome)
+	if err != nil {
+		failf("Failed to create sdk manager, error: %s", err)
+	}
 
 	isSupportLibraryUpdated := false
 	isGooglePlayServicesUpdated := false
 
 	for _, dependencies := range dependenciesToEnsure {
 		// Ensure SDK
-		log.Printf("Checking compileSdkVersion: %s", dependencies.ComplieSDKVersion)
+		log.Printf("Checking compileSdkVersion: %s", dependencies.PlatformVersion)
 
-		if installed, err := toolHelper.IsSDKVersionInstalled(dependencies.ComplieSDKVersion); err != nil {
-			failf("Failed to check if sdk version (%s) installed, error: %s", dependencies.ComplieSDKVersion.String(), err)
+		platformComponent := sdkcomponent.Platform{
+			Version: dependencies.PlatformVersion,
+		}
+
+		if installed, err := sdkManager.IsInstalled(platformComponent); err != nil {
+			failf("Failed to check if sdk version (%s) installed, error: %s", dependencies.PlatformVersion, err)
 		} else if !installed {
-			log.Printf("compileSdkVersion: %s not installed", dependencies.ComplieSDKVersion.String())
+			log.Printf("compileSdkVersion: %s not installed, installing...", dependencies.PlatformVersion)
 
-			if err := toolHelper.InstallSDKVersion(dependencies.ComplieSDKVersion); err != nil {
-				failf("Failed to install sdk version (%s), error: %s", dependencies.ComplieSDKVersion.String(), err)
+			cmd := sdkManager.InstallCommand(platformComponent)
+			cmd.SetStdin(strings.NewReader("y"))
+			cmd.SetStdout(os.Stdout)
+			cmd.SetStderr(os.Stderr)
+
+			log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+			if err := cmd.Run(); err != nil {
+				failf("Failed to install sdk version (%s), error: %s", dependencies.PlatformVersion, err)
 			}
 		}
 
-		log.Donef("compileSdkVersion: %s installed", dependencies.ComplieSDKVersion.String())
+		log.Donef("compileSdkVersion: %s installed", dependencies.PlatformVersion)
 
 		// Ensure build-tool
 		log.Printf("Checking buildToolsVersion: %s", dependencies.BuildToolsVersion)
 
-		if installed, err := toolHelper.IsBuildToolsInstalled(dependencies.BuildToolsVersion); err != nil {
-			failf("Failed to check if build-tools (%s) installed, error: %s", dependencies.BuildToolsVersion.String(), err)
-		} else if !installed {
-			log.Printf("buildToolsVersion: %s not installed", dependencies.BuildToolsVersion.String())
-
-			if err := toolHelper.InstallBuildToolsVersion(dependencies.BuildToolsVersion); err != nil {
-				failf("Failed to install build-tools version (%s), error: %s", dependencies.BuildToolsVersion.String(), err)
-			}
+		buildToolComponent := sdkcomponent.BuildTool{
+			Version: dependencies.BuildToolsVersion,
 		}
 
-		log.Donef("buildToolsVersion: %s installed", dependencies.BuildToolsVersion.String())
+		if installed, err := sdkManager.IsInstalled(buildToolComponent); err != nil {
+			failf("Failed to check if build-tools (%s) installed, error: %s", dependencies.BuildToolsVersion, err)
+		} else if !installed {
+			log.Printf("buildToolsVersion: %s not installed, installing...", dependencies.BuildToolsVersion)
+
+			cmd := sdkManager.InstallCommand(buildToolComponent)
+			cmd.SetStdin(strings.NewReader("y"))
+			cmd.SetStdout(os.Stdout)
+			cmd.SetStderr(os.Stderr)
+
+			log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+			if err := cmd.Run(); err != nil {
+				failf("Failed to install build tools version (%s), error: %s", dependencies.BuildToolsVersion, err)
+			}
+
+			if installed, err := sdkManager.IsInstalled(buildToolComponent); err != nil {
+				failf("Failed to check if build tools version (%s) installed, error: %s", dependencies.BuildToolsVersion, err)
+			} else if !installed {
+				failf("Failed to install build tools version (%s)", dependencies.BuildToolsVersion)
+			}
+
+		}
+
+		log.Donef("buildToolsVersion: %s installed", dependencies.BuildToolsVersion)
 
 		// Ensure support-library
 		if dependencies.UseSupportLibrary && configs.UpdateSupportLibraryAndPlayServices == "true" && !isSupportLibraryUpdated {
 			log.Printf("Updating Support Library")
 
-			if err := toolHelper.UpdateSupportLibrary(); err != nil {
-				failf("Failed to update Support Library, error: %s", err)
+			extras := []sdkcomponent.Extras{}
+			if sdkManager.IsLegacySDK() {
+				extras = sdkcomponent.LegacySupportLibraryInstallComponents()
+			} else {
+				extras = sdkcomponent.SupportLibraryInstallComponents()
+			}
+
+			for _, extra := range extras {
+				cmd := sdkManager.InstallCommand(extra)
+				cmd.SetStdin(strings.NewReader("y"))
+				cmd.SetStdout(os.Stdout)
+				cmd.SetStderr(os.Stderr)
+
+				log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+				if err := cmd.Run(); err != nil {
+					failf("Failed to update Support Library, error: %s", err)
+				}
+
+				if installed, err := sdkManager.IsInstalled(extra); err != nil {
+					failf("Failed to check if Support Library installed, error: %s", err)
+				} else if !installed {
+					failf("Failed to update Support Library, error: %s", err)
+				}
 			}
 
 			isSupportLibraryUpdated = true
@@ -242,8 +298,30 @@ func main() {
 		if dependencies.UseGooglePlayServices && configs.UpdateSupportLibraryAndPlayServices == "true" && !isGooglePlayServicesUpdated {
 			log.Printf("Updating Google Play Services")
 
-			if err := toolHelper.UpdateGooglePlayServices(); err != nil {
-				failf("Failed to update Google Play Services, error: %s", err)
+			extras := []sdkcomponent.Extras{}
+			if sdkManager.IsLegacySDK() {
+				extras = sdkcomponent.LegacyGooglePlayServicesInstallComponents()
+			} else {
+				extras = sdkcomponent.GooglePlayServicesInstallComponents()
+			}
+
+			for _, extra := range extras {
+				cmd := sdkManager.InstallCommand(extra)
+				cmd.SetStdin(strings.NewReader("y"))
+				cmd.SetStdout(os.Stdout)
+				cmd.SetStderr(os.Stderr)
+
+				log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+				if err := cmd.Run(); err != nil {
+					failf("Failed to update Google Play Services, error: %s", err)
+				}
+
+				if installed, err := sdkManager.IsInstalled(extra); err != nil {
+					failf("Failed to check if Google Play Services installed, error: %s", err)
+				} else if !installed {
+					failf("Failed to update Google Play Services, error: %s", err)
+				}
 			}
 
 			isGooglePlayServicesUpdated = true

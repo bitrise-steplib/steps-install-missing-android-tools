@@ -16,8 +16,8 @@ import (
 
 // ProjectDependenciesModel ...
 type ProjectDependenciesModel struct {
-	ComplieSDKVersion *version.Version
-	BuildToolsVersion *version.Version
+	PlatformVersion   string
+	BuildToolsVersion string
 
 	UseSupportLibrary     bool
 	UseGooglePlayServices bool
@@ -31,11 +31,11 @@ func NewProjectDependencies(buildGradleContent string) (ProjectDependenciesModel
 // String ...
 func (projectDepencies ProjectDependenciesModel) String() string {
 	outStr := ""
-	if projectDepencies.ComplieSDKVersion != nil {
-		outStr += fmt.Sprintf("  compileSdkVersion: %s\n", projectDepencies.ComplieSDKVersion.String())
+	if projectDepencies.PlatformVersion != "" {
+		outStr += fmt.Sprintf("  compileSdkVersion: %s\n", projectDepencies.PlatformVersion)
 	}
-	if projectDepencies.BuildToolsVersion != nil {
-		outStr += fmt.Sprintf("  buildToolsVersion: %s\n", projectDepencies.BuildToolsVersion.String())
+	if projectDepencies.BuildToolsVersion != "" {
+		outStr += fmt.Sprintf("  buildToolsVersion: %s\n", projectDepencies.BuildToolsVersion)
 	}
 
 	outStr += fmt.Sprintf("  uses Support Library: %v\n", projectDepencies.UseSupportLibrary)
@@ -79,7 +79,7 @@ func ParseIncludedModules(settingsGradleContent string) ([]string, error) {
 // --- Functions
 // -----------------------
 
-func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error) {
+func parsePlatformVersion(buildGradleContent string) (string, error) {
 	//     compileSdkVersion 23
 
 	pattern := `(?i).*compileSdkVersion\s*(?P<v>[0-9]+)`
@@ -97,23 +97,23 @@ func parseCompileSDKVersion(buildGradleContent string) (*version.Version, error)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if compileSDKVersionStr == "" {
-		return nil, errors.New("failed to find compileSdkVersion")
+		return "", errors.New("failed to find compileSdkVersion")
 	}
 
-	compileSDKVesrion, err := version.NewVersion(compileSDKVersionStr)
+	_, err := version.NewVersion(compileSDKVersionStr)
 	if err != nil {
 		// Possible defined with variable
-		return nil, fmt.Errorf("failed to parse compileSdkVersion (%s), error: %s", compileSDKVersionStr, err)
+		return "", fmt.Errorf("failed to parse compileSdkVersion (%s), error: %s", compileSDKVersionStr, err)
 	}
 
-	return compileSDKVesrion, nil
+	return "android-" + compileSDKVersionStr, nil
 }
 
-func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error) {
+func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 	//     buildToolsVersion "23.0.3"
 
 	pattern := `(?i).*buildToolsVersion\s*["']+(?P<v>[0-9.]+)["']+`
@@ -131,20 +131,20 @@ func parseBuildToolsVersion(buildGradleContent string) (*version.Version, error)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if buildToolsVersionStr == "" {
-		return nil, errors.New("failed to find buildToolsVersion")
+		return "", errors.New("failed to find buildToolsVersion")
 	}
 
-	buildToolsVersion, err := version.NewVersion(buildToolsVersionStr)
+	_, err := version.NewVersion(buildToolsVersionStr)
 	if err != nil {
 		// Possible defined with variable
-		return nil, fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersionStr, err)
+		return "", fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersionStr, err)
 	}
 
-	return buildToolsVersion, nil
+	return buildToolsVersionStr, nil
 }
 
 func parseUseSupportLibrary(buildGradleContent string) (bool, error) {
@@ -192,7 +192,7 @@ func parseUseGooglePlayServices(buildGradleContent string) (bool, error) {
 }
 
 func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
-	compileSDKVersion, err := parseCompileSDKVersion(buildGradleContent)
+	platformVersion, err := parsePlatformVersion(buildGradleContent)
 	if err != nil {
 		return ProjectDependenciesModel{}, fmt.Errorf("failed to determine compileSDKVersion, error: %s", err)
 	}
@@ -213,7 +213,7 @@ func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, erro
 	}
 
 	dependencies := ProjectDependenciesModel{
-		ComplieSDKVersion: compileSDKVersion,
+		PlatformVersion:   platformVersion,
 		BuildToolsVersion: buildToolsVersion,
 
 		UseSupportLibrary:     useSupportLibrary,
