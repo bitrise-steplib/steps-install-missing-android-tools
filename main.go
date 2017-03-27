@@ -201,7 +201,7 @@ func main() {
 
 	androidSdk, err := sdk.New(configs.AndroidHome)
 	if err != nil {
-		failf("Failed to create sdk manager, error: %s", err)
+		failf("failed to evaulate symlink of (%s), error: %s", configs.AndroidHome, err)
 	}
 
 	sdkManager, err := sdkmanager.New(androidSdk)

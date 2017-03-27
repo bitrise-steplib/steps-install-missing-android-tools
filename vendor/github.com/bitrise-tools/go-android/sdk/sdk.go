@@ -1,19 +1,10 @@
 package sdk
 
-import (
-	"path/filepath"
-
-	"fmt"
-
-	"github.com/bitrise-tools/go-android/sdkcomponent"
-)
+import "path/filepath"
 
 // Model ...
 type Model struct {
-	androidHome  string
-	buildTools   []sdkcomponent.BuildTool
-	platforms    []sdkcomponent.Platform
-	systemImages []sdkcomponent.SystemImage
+	androidHome string
 }
 
 // AndroidSdkInterface ...
@@ -25,7 +16,7 @@ type AndroidSdkInterface interface {
 func New(androidHome string) (*Model, error) {
 	androidHomeEval, err := filepath.EvalSymlinks(androidHome)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to evaulate symlink of (%s), error: %s", androidHome, err)
+		return nil, err
 	}
 	return &Model{androidHome: androidHomeEval}, nil
 }
