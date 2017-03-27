@@ -6,6 +6,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 )
 
@@ -18,25 +19,19 @@ type Model struct {
 
 // IsLegacySDKManager ...
 func IsLegacySDKManager(androidHome string) (bool, error) {
-	if exist, err := pathutil.IsDirExists(androidHome); err != nil {
-		return false, err
-	} else if !exist {
-		return false, fmt.Errorf("android home not exists at: %s", androidHome)
-	}
-
 	exist, err := pathutil.IsPathExists(filepath.Join(androidHome, "tools", "bin", "sdkmanager"))
 	return !exist, err
 }
 
 // New ...
-func New(androidHome string) (*Model, error) {
-	binPth := filepath.Join(androidHome, "tools", "bin", "sdkmanager")
+func New(androidSdkInterface sdk.AndroidSdkInterface) (*Model, error) {
+	binPth := filepath.Join(androidSdkInterface.GetAndroidHome(), "tools", "bin", "sdkmanager")
 
-	legacy, err := IsLegacySDKManager(androidHome)
+	legacy, err := IsLegacySDKManager(androidSdkInterface.GetAndroidHome())
 	if err != nil {
 		return nil, err
 	} else if legacy {
-		binPth = filepath.Join(androidHome, "tools", "android")
+		binPth = filepath.Join(androidSdkInterface.GetAndroidHome(), "tools", "android")
 	}
 
 	if exist, err := pathutil.IsPathExists(binPth); err != nil {
@@ -46,7 +41,7 @@ func New(androidHome string) (*Model, error) {
 	}
 
 	return &Model{
-		androidHome: androidHome,
+		androidHome: androidSdkInterface.GetAndroidHome(),
 		legacy:      legacy,
 		binPth:      binPth,
 	}, nil

@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/analyzer"
+	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 	"github.com/bitrise-tools/go-android/sdkmanager"
 )
@@ -198,12 +199,12 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure dependencies")
 
-	evaluatedAndroidHomePth, err := filepath.EvalSymlinks(configs.AndroidHome)
+	androidSdk, err := sdk.New(configs.AndroidHome)
 	if err != nil {
-		failf("Failed to evaulate symlink of (%s), error: %s", configs.AndroidHome, err)
+		failf("Failed to create sdk manager, error: %s", err)
 	}
 
-	sdkManager, err := sdkmanager.New(evaluatedAndroidHomePth)
+	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		failf("Failed to create sdk manager, error: %s", err)
 	}
