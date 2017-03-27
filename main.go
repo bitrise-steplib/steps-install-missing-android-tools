@@ -198,7 +198,12 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure dependencies")
 
-	sdkManager, err := sdkmanager.New(configs.AndroidHome)
+	evaluatedAndroidHomePth, err := filepath.EvalSymlinks(configs.AndroidHome)
+	if err != nil {
+		failf("Failed to evaulate symlink of (%s), error: %s", configs.AndroidHome, err)
+	}
+
+	sdkManager, err := sdkmanager.New(evaluatedAndroidHomePth)
 	if err != nil {
 		failf("Failed to create sdk manager, error: %s", err)
 	}
