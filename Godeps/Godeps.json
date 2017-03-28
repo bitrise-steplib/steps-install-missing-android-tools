@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/bitrise-steplib/steps-install-missing-android-tools",
-	"GoVersion": "go1.8",
+	"GoVersion": "go1.7",
 	"GodepVersion": "v79",
 	"Packages": [
 		"./..."
@@ -13,39 +13,43 @@
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/colorstring",
-			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
+			"Rev": "5863e947430502abe15cb53a93e955259728ff66"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/command",
-			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
+			"Rev": "5863e947430502abe15cb53a93e955259728ff66"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/errorutil",
-			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
+			"Rev": "5863e947430502abe15cb53a93e955259728ff66"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/fileutil",
-			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
+			"Rev": "5863e947430502abe15cb53a93e955259728ff66"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/log",
-			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
+			"Rev": "5863e947430502abe15cb53a93e955259728ff66"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/pathutil",
-			"Rev": "477d758d7497458ddbec25bec4a8d107bbe0404d"
+			"Rev": "5863e947430502abe15cb53a93e955259728ff66"
+		},
+		{
+			"ImportPath": "github.com/bitrise-tools/go-android/sdk",
+			"Rev": "e5ba0b957d033f5e03bdaac0787baa1d476527c4"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-android/sdkcomponent",
-			"Rev": "d63efd1fe12c3281b57cb00d35b30dbd1e642e80"
+			"Rev": "e5ba0b957d033f5e03bdaac0787baa1d476527c4"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-android/sdkmanager",
-			"Rev": "d63efd1fe12c3281b57cb00d35b30dbd1e642e80"
+			"Rev": "e5ba0b957d033f5e03bdaac0787baa1d476527c4"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-xcode/xcodeproj",
-			"Rev": "2dfa286d87ca7ef6e52f871de262de29e7129845"
+			"Rev": "2085f4cdcd4e0a6e9f513bfa93777a407273f220"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
