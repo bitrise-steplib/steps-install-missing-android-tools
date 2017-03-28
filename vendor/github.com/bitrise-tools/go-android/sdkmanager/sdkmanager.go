@@ -24,14 +24,14 @@ func IsLegacySDKManager(androidHome string) (bool, error) {
 }
 
 // New ...
-func New(androidSdkInterface sdk.AndroidSdkInterface) (*Model, error) {
-	binPth := filepath.Join(androidSdkInterface.GetAndroidHome(), "tools", "bin", "sdkmanager")
+func New(sdk sdk.AndroidSdkInterface) (*Model, error) {
+	binPth := filepath.Join(sdk.GetAndroidHome(), "tools", "bin", "sdkmanager")
 
-	legacy, err := IsLegacySDKManager(androidSdkInterface.GetAndroidHome())
+	legacy, err := IsLegacySDKManager(sdk.GetAndroidHome())
 	if err != nil {
 		return nil, err
 	} else if legacy {
-		binPth = filepath.Join(androidSdkInterface.GetAndroidHome(), "tools", "android")
+		binPth = filepath.Join(sdk.GetAndroidHome(), "tools", "android")
 	}
 
 	if exist, err := pathutil.IsPathExists(binPth); err != nil {
@@ -41,7 +41,7 @@ func New(androidSdkInterface sdk.AndroidSdkInterface) (*Model, error) {
 	}
 
 	return &Model{
-		androidHome: androidSdkInterface.GetAndroidHome(),
+		androidHome: sdk.GetAndroidHome(),
 		legacy:      legacy,
 		binPth:      binPth,
 	}, nil

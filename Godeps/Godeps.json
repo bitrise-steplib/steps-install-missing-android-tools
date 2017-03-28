@@ -37,15 +37,15 @@
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-android/sdk",
-			"Rev": "d63efd1fe12c3281b57cb00d35b30dbd1e642e80"
+			"Rev": "e5ba0b957d033f5e03bdaac0787baa1d476527c4"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-android/sdkcomponent",
-			"Rev": "d63efd1fe12c3281b57cb00d35b30dbd1e642e80"
+			"Rev": "e5ba0b957d033f5e03bdaac0787baa1d476527c4"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-android/sdkmanager",
-			"Rev": "d63efd1fe12c3281b57cb00d35b30dbd1e642e80"
+			"Rev": "e5ba0b957d033f5e03bdaac0787baa1d476527c4"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-xcode/xcodeproj",

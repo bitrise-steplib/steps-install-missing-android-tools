@@ -201,7 +201,7 @@ func main() {
 
 	androidSdk, err := sdk.New(configs.AndroidHome)
 	if err != nil {
-		failf("Failed to evaulate ANDROID_HOME path (%s), error: %s", configs.AndroidHome, err)
+		failf("Failed to create sdk, error: %s", err)
 	}
 
 	sdkManager, err := sdkmanager.New(androidSdk)

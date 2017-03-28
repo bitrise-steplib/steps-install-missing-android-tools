@@ -1,6 +1,11 @@
 package sdk
 
-import "path/filepath"
+import (
+	"fmt"
+	"path/filepath"
+
+	"github.com/bitrise-io/go-utils/pathutil"
+)
 
 // Model ...
 type Model struct {
@@ -14,11 +19,18 @@ type AndroidSdkInterface interface {
 
 // New ...
 func New(androidHome string) (*Model, error) {
-	androidHomeEval, err := filepath.EvalSymlinks(androidHome)
+	evaluatedAndroidHome, err := filepath.EvalSymlinks(androidHome)
 	if err != nil {
 		return nil, err
 	}
-	return &Model{androidHome: androidHomeEval}, nil
+
+	if exist, err := pathutil.IsDirExists(evaluatedAndroidHome); err != nil {
+		return nil, err
+	} else if !exist {
+		return nil, fmt.Errorf("android home not exists at: %s", evaluatedAndroidHome)
+	}
+
+	return &Model{androidHome: evaluatedAndroidHome}, nil
 }
 
 // GetAndroidHome ...
