@@ -39,8 +39,8 @@ func NewProjectDependencies(buildGradlePth, gradlewPth string) (ProjectDependenc
 
 	dependencies, err := parseBuildGradle(buildGradleContent)
 	if err != nil {
-		log.Warnf("failed to parse build gradle file: %s, error: %s", buildGradlePth, err)
-		log.Warnf("switch to extended analyzer...")
+		log.Warnf("Failed to parse build gradle file: %s, error: %s", buildGradlePth, err)
+		log.Warnf("Switched to extended analyzer...")
 
 		compileSDKVersion, buildToolsVersion, err := analyzeWithGradlew(buildGradlePth, gradlewPth)
 		if err != nil {
@@ -49,12 +49,12 @@ func NewProjectDependencies(buildGradlePth, gradlewPth string) (ProjectDependenc
 
 		useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
 		if err != nil {
-			log.Warnf("failed to detemin if use supportLibrary, error: %s", err)
+			log.Warnf("Failed to determine if supportLibrary is used, error: %s", err)
 		}
 
 		useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
 		if err != nil {
-			log.Warnf("failed to detemine if use googlePlayServices, error: %s", err)
+			log.Warnf("Failed to determine if googlePlayServices is used, error: %s", err)
 		}
 
 		return ProjectDependenciesModel{
@@ -274,15 +274,15 @@ if (plugins.hasPlugin('com.android.application')) {
 	if strings.HasPrefix(compileSDKVersion, "android-") {
 		_, err = version.NewVersion(strings.TrimPrefix(compileSDKVersion, "android-"))
 		if err != nil {
-			return "", "", fmt.Errorf("failed to parse compileSDKVersion (%s), error: %s", compileSDKVersion, err)
+			return "", "", fmt.Errorf("Failed to parse compileSDKVersion (%s), error: %s", compileSDKVersion, err)
 		}
 	} else {
-		return "", "", fmt.Errorf("failed to parse compileSDKVersion (%s)", compileSDKVersion)
+		return "", "", fmt.Errorf("Failed to parse compileSDKVersion (%s)", compileSDKVersion)
 	}
 
 	_, err = version.NewVersion(buildToolsVersion)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersion, err)
+		return "", "", fmt.Errorf("Failed to parse buildToolsVersion (%s), error: %s", buildToolsVersion, err)
 	}
 
 	return compileSDKVersion, buildToolsVersion, nil
@@ -291,22 +291,22 @@ if (plugins.hasPlugin('com.android.application')) {
 func parseBuildGradle(buildGradleContent string) (ProjectDependenciesModel, error) {
 	platformVersion, err := parsePlatformVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to determine compileSDKVersion, error: %s", err)
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to determine compileSDKVersion, error: %s", err)
 	}
 
 	buildToolsVersion, err := parseBuildToolsVersion(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to deterime buildToolsVersion, error: %s", err)
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to determine buildToolsVersion, error: %s", err)
 	}
 
 	useSupportLibrary, err := parseUseSupportLibrary(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to detemin if use supportLibrary, error: %s", err)
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to determine if supportLibrary is used, error: %s", err)
 	}
 
 	useGooglePlayServices, err := parseUseGooglePlayServices(buildGradleContent)
 	if err != nil {
-		return ProjectDependenciesModel{}, fmt.Errorf("failed to detemine if use googlePlayServices, error: %s", err)
+		return ProjectDependenciesModel{}, fmt.Errorf("Failed to determine if googlePlayServices is used, error: %s", err)
 	}
 
 	dependencies := ProjectDependenciesModel{

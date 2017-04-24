@@ -116,9 +116,9 @@ func main() {
 	}
 
 	//
-	// Search for root setting.gradle file
+	// Search for root settings.gradle file
 	fmt.Println()
-	log.Infof("Search for root setting.gradle file")
+	log.Infof("Search for root settings.gradle file")
 
 	rootBuildGradleFile, err := pathutil.AbsPath(configs.RootBuildGradleFile)
 	if err != nil {
@@ -239,7 +239,7 @@ func main() {
 
 		log.Donef("compileSdkVersion: %s installed", dependencies.PlatformVersion)
 
-		// Ensure build-tool
+		// Ensure build-tools
 		log.Printf("Checking buildToolsVersion: %s", dependencies.BuildToolsVersion)
 
 		buildToolComponent := sdkcomponent.BuildTool{
