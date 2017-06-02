@@ -35,15 +35,13 @@ toolkit:
 inputs:
   - root_build_gradle_file: $GRADLE_BUILD_FILE_PATH
     opts:
-      category: Config
       title: "Path to the root build.gradle file"
       summary: ""
       description: |-
-        Path to the root build.gradle file.
+        Path to the root build.gradle file. 
       is_required: true
   - gradlew_path: $GRADLEW_PATH
     opts:
-      category: Config
       title: gradlew file path
       description: |
         Using a Gradle Wrapper (gradlew) is required, as the wrapper is what makes sure
@@ -57,7 +55,6 @@ inputs:
       is_required: true
   - update_support_library_and_play_services: "true"
     opts:
-      category: Debug
       title: "Should the step update `Support Library` and `Google Play Services`"
       summary: ""
       description: |-
