@@ -1,6 +1,13 @@
-## Changelog (Current version: 1.0.2)
+## Changelog (Current version: 1.0.3)
 
 -----------------
+
+### 1.0.3 (2017 Jun 12)
+
+* [aa55688] prepare for 1.0.3
+* [20ad08b] input grouping and reordering (#14)
+* [1d208ca] Revert "input grouping and reordering"
+* [2440ff0] input grouping and reordering
 
 ### 1.0.2 (2017 Apr 25)
 
@@ -30,4 +37,4 @@
 
 -----------------
 
-Updated: 2017 Apr 25
+Updated: 2017 Jun 12
