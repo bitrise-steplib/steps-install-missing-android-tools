@@ -162,9 +162,16 @@ func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 		return "", errors.New("failed to find buildToolsVersion")
 	}
 
-	_, err := version.NewVersion(buildToolsVersionStr)
+	parsedVersion, err := version.NewVersion(buildToolsVersionStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse buildToolsVersion (%s), error: %s", buildToolsVersionStr, err)
+	}
+
+	split := strings.Split(buildToolsVersionStr, ".")
+	if len(split) != 3 {
+		log.Warnf("buildToolsVersion is not a semver version: %s", buildToolsVersionStr)
+		buildToolsVersionStr = parsedVersion.String()
+		log.Warnf("fixed buildToolsVersion: %s", buildToolsVersionStr)
 	}
 
 	return buildToolsVersionStr, nil

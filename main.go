@@ -116,9 +116,9 @@ func main() {
 	}
 
 	//
-	// Search for root settings.gradle file
+	// Collect build.gradle files to analyze
 	fmt.Println()
-	log.Infof("Search for root settings.gradle file")
+	log.Infof("Collect build.gradle files to analyze")
 
 	rootBuildGradleFile, err := pathutil.AbsPath(configs.RootBuildGradleFile)
 	if err != nil {
@@ -127,48 +127,43 @@ func main() {
 
 	log.Printf("root build.gradle file: %s", rootBuildGradleFile)
 
+	buildGradleFilesToAnalyze := []string{}
+
 	// root settigs.gradle file should be in the same dir as root build.gradle file
 	rootBuildGradleDir := filepath.Dir(rootBuildGradleFile)
 	rootSettingsGradleFile := filepath.Join(rootBuildGradleDir, settingsGradleBasename)
 	if exist, err := pathutil.IsPathExists(rootSettingsGradleFile); err != nil {
 		failf("Failed to check if root settings.gradle exist at: %s, error: %s", rootSettingsGradleFile, err)
 	} else if !exist {
-		failf("No root settings.gradle exist at: %s", rootSettingsGradleFile)
-	}
+		log.Warnf("no root settings.gradle file exist at: %s", rootSettingsGradleFile)
+		buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, rootBuildGradleFile)
+	} else {
+		log.Printf("root settings.gradle file: %s", rootSettingsGradleFile)
 
-	log.Printf("root settings.gradle file:: %s", rootSettingsGradleFile)
-	// ---
-
-	//
-	// Collect build.gradle files to analyze based on root settings.gradle file
-	fmt.Println()
-	log.Infof("Collect build.gradle files to analyze")
-
-	buildGradleFilesToAnalyze := []string{}
-
-	rootSettingsGradleContent, err := fileutil.ReadStringFromFile(rootSettingsGradleFile)
-	if err != nil {
-		failf("Failed to read settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-	}
-
-	modules, err := analyzer.ParseIncludedModules(rootSettingsGradleContent)
-	if err != nil {
-		failf("Failed to parse included modules from settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-
-	}
-
-	log.Printf("active modules to analyze: %v", modules)
-
-	for _, module := range modules {
-		moduleBuildGradleFile := filepath.Join(rootBuildGradleDir, module, buildGradleBasename)
-		if exist, err := pathutil.IsPathExists(moduleBuildGradleFile); err != nil {
-			failf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
-		} else if !exist {
-			log.Warnf("build.gradle file not found for module: %s at: %s, error: %s", module, moduleBuildGradleFile, err)
-			continue
+		rootSettingsGradleContent, err := fileutil.ReadStringFromFile(rootSettingsGradleFile)
+		if err != nil {
+			failf("Failed to read settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
 		}
 
-		buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, moduleBuildGradleFile)
+		modules, err := analyzer.ParseIncludedModules(rootSettingsGradleContent)
+		if err != nil {
+			failf("Failed to parse included modules from settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
+
+		}
+
+		log.Printf("active modules to analyze: %v", modules)
+
+		for _, module := range modules {
+			moduleBuildGradleFile := filepath.Join(rootBuildGradleDir, module, buildGradleBasename)
+			if exist, err := pathutil.IsPathExists(moduleBuildGradleFile); err != nil {
+				failf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
+			} else if !exist {
+				log.Warnf("build.gradle file not found for module: %s at: %s, error: %s", module, moduleBuildGradleFile, err)
+				continue
+			}
+
+			buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, moduleBuildGradleFile)
+		}
 	}
 
 	log.Printf("build.gradle files to analyze: %v", buildGradleFilesToAnalyze)
