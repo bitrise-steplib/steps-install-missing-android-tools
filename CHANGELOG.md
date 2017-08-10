@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.0.3)
+## Changelog (Current version: 1.1.0)
 
 -----------------
+
+### 1.1.0 (2017 Aug 10)
+
+* [f5128a1] prepare for 1.1.0
+* [59f4c88] handle project without modeles, solve not semver buildToolsVersion (#15)
 
 ### 1.0.3 (2017 Jun 12)
 
@@ -37,4 +42,4 @@
 
 -----------------
 
-Updated: 2017 Jun 12
+Updated: 2017 Aug 10
