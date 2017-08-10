@@ -15,6 +15,7 @@ import (
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 	"github.com/bitrise-tools/go-android/sdkmanager"
+	"github.com/bitrise-tools/go-steputils/tools"
 )
 
 const (
@@ -206,6 +207,8 @@ func main() {
 
 	isSupportLibraryUpdated := false
 	isGooglePlayServicesUpdated := false
+	compileSDKVersionsMap := map[string]bool{}
+	buildToolsVersionsMap := map[string]bool{}
 
 	for _, dependencies := range dependenciesToEnsure {
 		// Ensure SDK
@@ -231,6 +234,8 @@ func main() {
 				failf("Failed to install sdk version (%s), error: %s", dependencies.PlatformVersion, err)
 			}
 		}
+
+		compileSDKVersionsMap[dependencies.PlatformVersion] = true
 
 		log.Donef("compileSdkVersion: %s installed", dependencies.PlatformVersion)
 
@@ -264,6 +269,8 @@ func main() {
 			}
 
 		}
+
+		buildToolsVersionsMap[dependencies.BuildToolsVersion] = true
 
 		log.Donef("buildToolsVersion: %s installed", dependencies.BuildToolsVersion)
 
@@ -334,5 +341,40 @@ func main() {
 			isGooglePlayServicesUpdated = true
 			log.Donef("Google Play Services updated")
 		}
+	}
+
+	if len(compileSDKVersionsMap) > 0 || len(buildToolsVersionsMap) > 0 {
+		fmt.Println()
+		log.Infof("Exporting step outputs")
+	}
+
+	if len(compileSDKVersionsMap) > 0 {
+		compileSDKVersionsStr := ""
+		for compileSDKVersion := range compileSDKVersionsMap {
+			compileSDKVersionsStr += compileSDKVersion + "|"
+		}
+		compileSDKVersionsStr = strings.TrimSuffix(compileSDKVersionsStr, "|")
+
+		envKey := "COMPILE_SDK_VERSIONS"
+		if err := tools.ExportEnvironmentWithEnvman(envKey, compileSDKVersionsStr); err != nil {
+			log.Warnf("Failed to export %s, error: %s", envKey, err)
+		}
+
+		log.Donef("The compileSdkVersions are now available in the Environment Variable: %s (value: %s)", envKey, compileSDKVersionsStr)
+	}
+
+	if len(buildToolsVersionsMap) > 0 {
+		buildToolsVersionsStr := ""
+		for compileSDKVersion := range buildToolsVersionsMap {
+			buildToolsVersionsStr += compileSDKVersion + "|"
+		}
+		buildToolsVersionsStr = strings.TrimSuffix(buildToolsVersionsStr, "|")
+
+		envKey := "BUILD_TOOLS_VERSIONS"
+		if err := tools.ExportEnvironmentWithEnvman(envKey, buildToolsVersionsStr); err != nil {
+			log.Warnf("Failed to export %s, error: %s", envKey, err)
+		}
+
+		log.Donef("The buildToolsVersions are now available in the Environment Variable: %s (value: %s)", envKey, buildToolsVersionsStr)
 	}
 }

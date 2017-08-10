@@ -11,6 +11,39 @@ type Model interface {
 	GetSDKStylePath() string
 	GetLegacySDKStylePath() string
 	InstallPathInAndroidHome() string
+	InstallationIndicatorFile() string
+}
+
+// SDKTool ...
+type SDKTool struct {
+	SDKStylePath       string
+	LegacySDKStylePath string
+}
+
+// GetSDKStylePath ...
+func (component SDKTool) GetSDKStylePath() string {
+	if component.SDKStylePath != "" {
+		return component.SDKStylePath
+	}
+	return "tools"
+}
+
+// GetLegacySDKStylePath ...
+func (component SDKTool) GetLegacySDKStylePath() string {
+	if component.LegacySDKStylePath != "" {
+		return component.LegacySDKStylePath
+	}
+	return "tools"
+}
+
+// InstallPathInAndroidHome ...
+func (component SDKTool) InstallPathInAndroidHome() string {
+	return "tools"
+}
+
+// InstallationIndicatorFile ...
+func (component SDKTool) InstallationIndicatorFile() string {
+	return ""
 }
 
 // BuildTool ...
@@ -42,6 +75,11 @@ func (component BuildTool) InstallPathInAndroidHome() string {
 	return filepath.Join("build-tools", component.Version)
 }
 
+// InstallationIndicatorFile ...
+func (component BuildTool) InstallationIndicatorFile() string {
+	return ""
+}
+
 // Platform ...
 type Platform struct {
 	Version string
@@ -69,6 +107,11 @@ func (component Platform) GetLegacySDKStylePath() string {
 // InstallPathInAndroidHome ...
 func (component Platform) InstallPathInAndroidHome() string {
 	return filepath.Join("platforms", component.Version)
+}
+
+// InstallationIndicatorFile ...
+func (component Platform) InstallationIndicatorFile() string {
+	return ""
 }
 
 // SystemImage ...
@@ -120,6 +163,11 @@ func (component SystemImage) InstallPathInAndroidHome() string {
 	}
 
 	return filepath.Join("system-images", component.Platform, componentTag, component.ABI)
+}
+
+// InstallationIndicatorFile ...
+func (component SystemImage) InstallationIndicatorFile() string {
+	return "system.img"
 }
 
 // Extras ...
@@ -204,4 +252,9 @@ func (component Extras) GetLegacySDKStylePath() string {
 // InstallPathInAndroidHome ...
 func (component Extras) InstallPathInAndroidHome() string {
 	return filepath.Join("extras", component.Provider, component.PackageName)
+}
+
+// InstallationIndicatorFile ...
+func (component Extras) InstallationIndicatorFile() string {
+	return ""
 }

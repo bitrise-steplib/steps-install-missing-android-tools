@@ -68,3 +68,26 @@ inputs:
       - "true"
       - "false"
       is_required: true
+outputs:
+  - COMPILE_SDK_VERSIONS:
+    opts:
+      title: The compileSdkVersions
+      description: |-
+        The compileSdkVersions used by the project.
+
+        If the project contains multiple modules,
+        this output will contain every different 
+        compileSdkVersion in a pipe (`|`) separated list:
+
+        `android-22|android-23`
+  - BUILD_TOOLS_VERSIONS:
+    opts:
+      title: The buildToolsVersions
+      description: |-
+        The buildToolsVersions used by the project.
+
+        If the project contains multiple modules,
+        this output will contain every different 
+        buildToolsVersion in a pipe (`|`) separated list:
+
+        `22.0.1|20.0.0`

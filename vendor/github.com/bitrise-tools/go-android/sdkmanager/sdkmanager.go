@@ -55,7 +55,12 @@ func (model Model) IsLegacySDK() bool {
 // IsInstalled ...
 func (model Model) IsInstalled(component sdkcomponent.Model) (bool, error) {
 	relPth := component.InstallPathInAndroidHome()
+	indicatorFile := component.InstallationIndicatorFile()
 	installPth := filepath.Join(model.androidHome, relPth)
+
+	if indicatorFile != "" {
+		installPth = filepath.Join(installPth, indicatorFile)
+	}
 	return pathutil.IsPathExists(installPth)
 }
 
