@@ -15,6 +15,7 @@ import (
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 	"github.com/bitrise-tools/go-android/sdkmanager"
+	"github.com/bitrise-tools/go-steputils/tools"
 )
 
 const (
@@ -116,9 +117,9 @@ func main() {
 	}
 
 	//
-	// Search for root settings.gradle file
+	// Collect build.gradle files to analyze
 	fmt.Println()
-	log.Infof("Search for root settings.gradle file")
+	log.Infof("Collect build.gradle files to analyze")
 
 	rootBuildGradleFile, err := pathutil.AbsPath(configs.RootBuildGradleFile)
 	if err != nil {
@@ -127,48 +128,43 @@ func main() {
 
 	log.Printf("root build.gradle file: %s", rootBuildGradleFile)
 
+	buildGradleFilesToAnalyze := []string{}
+
 	// root settigs.gradle file should be in the same dir as root build.gradle file
 	rootBuildGradleDir := filepath.Dir(rootBuildGradleFile)
 	rootSettingsGradleFile := filepath.Join(rootBuildGradleDir, settingsGradleBasename)
 	if exist, err := pathutil.IsPathExists(rootSettingsGradleFile); err != nil {
 		failf("Failed to check if root settings.gradle exist at: %s, error: %s", rootSettingsGradleFile, err)
 	} else if !exist {
-		failf("No root settings.gradle exist at: %s", rootSettingsGradleFile)
-	}
+		log.Warnf("no root settings.gradle file exist at: %s", rootSettingsGradleFile)
+		buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, rootBuildGradleFile)
+	} else {
+		log.Printf("root settings.gradle file: %s", rootSettingsGradleFile)
 
-	log.Printf("root settings.gradle file:: %s", rootSettingsGradleFile)
-	// ---
-
-	//
-	// Collect build.gradle files to analyze based on root settings.gradle file
-	fmt.Println()
-	log.Infof("Collect build.gradle files to analyze")
-
-	buildGradleFilesToAnalyze := []string{}
-
-	rootSettingsGradleContent, err := fileutil.ReadStringFromFile(rootSettingsGradleFile)
-	if err != nil {
-		failf("Failed to read settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-	}
-
-	modules, err := analyzer.ParseIncludedModules(rootSettingsGradleContent)
-	if err != nil {
-		failf("Failed to parse included modules from settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-
-	}
-
-	log.Printf("active modules to analyze: %v", modules)
-
-	for _, module := range modules {
-		moduleBuildGradleFile := filepath.Join(rootBuildGradleDir, module, buildGradleBasename)
-		if exist, err := pathutil.IsPathExists(moduleBuildGradleFile); err != nil {
-			failf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
-		} else if !exist {
-			log.Warnf("build.gradle file not found for module: %s at: %s, error: %s", module, moduleBuildGradleFile, err)
-			continue
+		rootSettingsGradleContent, err := fileutil.ReadStringFromFile(rootSettingsGradleFile)
+		if err != nil {
+			failf("Failed to read settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
 		}
 
-		buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, moduleBuildGradleFile)
+		modules, err := analyzer.ParseIncludedModules(rootSettingsGradleContent)
+		if err != nil {
+			failf("Failed to parse included modules from settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
+
+		}
+
+		log.Printf("active modules to analyze: %v", modules)
+
+		for _, module := range modules {
+			moduleBuildGradleFile := filepath.Join(rootBuildGradleDir, module, buildGradleBasename)
+			if exist, err := pathutil.IsPathExists(moduleBuildGradleFile); err != nil {
+				failf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
+			} else if !exist {
+				log.Warnf("build.gradle file not found for module: %s at: %s", module, moduleBuildGradleFile)
+				continue
+			}
+
+			buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, moduleBuildGradleFile)
+		}
 	}
 
 	log.Printf("build.gradle files to analyze: %v", buildGradleFilesToAnalyze)
@@ -211,6 +207,8 @@ func main() {
 
 	isSupportLibraryUpdated := false
 	isGooglePlayServicesUpdated := false
+	compileSDKVersionsMap := map[string]bool{}
+	buildToolsVersionsMap := map[string]bool{}
 
 	for _, dependencies := range dependenciesToEnsure {
 		// Ensure SDK
@@ -236,6 +234,8 @@ func main() {
 				failf("Failed to install sdk version (%s), error: %s", dependencies.PlatformVersion, err)
 			}
 		}
+
+		compileSDKVersionsMap[dependencies.PlatformVersion] = true
 
 		log.Donef("compileSdkVersion: %s installed", dependencies.PlatformVersion)
 
@@ -270,6 +270,8 @@ func main() {
 
 		}
 
+		buildToolsVersionsMap[dependencies.BuildToolsVersion] = true
+
 		log.Donef("buildToolsVersion: %s installed", dependencies.BuildToolsVersion)
 
 		// Ensure support-library
@@ -298,7 +300,7 @@ func main() {
 				if installed, err := sdkManager.IsInstalled(extra); err != nil {
 					failf("Failed to check if Support Library installed, error: %s", err)
 				} else if !installed {
-					failf("Failed to update Support Library, error: %s", err)
+					failf("Failed to update Support Library")
 				}
 			}
 
@@ -332,12 +334,47 @@ func main() {
 				if installed, err := sdkManager.IsInstalled(extra); err != nil {
 					failf("Failed to check if Google Play Services installed, error: %s", err)
 				} else if !installed {
-					failf("Failed to update Google Play Services, error: %s", err)
+					failf("Failed to update Google Play Services")
 				}
 			}
 
 			isGooglePlayServicesUpdated = true
 			log.Donef("Google Play Services updated")
 		}
+	}
+
+	if len(compileSDKVersionsMap) > 0 || len(buildToolsVersionsMap) > 0 {
+		fmt.Println()
+		log.Infof("Exporting step outputs")
+	}
+
+	if len(compileSDKVersionsMap) > 0 {
+		compileSDKVersionsStr := ""
+		for compileSDKVersion := range compileSDKVersionsMap {
+			compileSDKVersionsStr += compileSDKVersion + "|"
+		}
+		compileSDKVersionsStr = strings.TrimSuffix(compileSDKVersionsStr, "|")
+
+		envKey := "COMPILE_SDK_VERSIONS"
+		if err := tools.ExportEnvironmentWithEnvman(envKey, compileSDKVersionsStr); err != nil {
+			log.Warnf("Failed to export %s, error: %s", envKey, err)
+		}
+
+		log.Donef("The compileSdkVersions are now available in the Environment Variable: %s (value: %s)", envKey, compileSDKVersionsStr)
+	}
+
+	if len(buildToolsVersionsMap) > 0 {
+		buildToolsVersionsStr := ""
+		for compileSDKVersion := range buildToolsVersionsMap {
+			buildToolsVersionsStr += compileSDKVersion + "|"
+		}
+		buildToolsVersionsStr = strings.TrimSuffix(buildToolsVersionsStr, "|")
+
+		envKey := "BUILD_TOOLS_VERSIONS"
+		if err := tools.ExportEnvironmentWithEnvman(envKey, buildToolsVersionsStr); err != nil {
+			log.Warnf("Failed to export %s, error: %s", envKey, err)
+		}
+
+		log.Donef("The buildToolsVersions are now available in the Environment Variable: %s (value: %s)", envKey, buildToolsVersionsStr)
 	}
 }

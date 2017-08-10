@@ -62,7 +62,21 @@ android {
 		require.Equal(t, "23.0.3", v)
 	}
 
-	t.Log("no compileSdkVersion")
+	t.Log("not semver buildToolsVersion")
+	{
+		content := `
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23"
+}
+`
+		v, err := parseBuildToolsVersion(content)
+		require.NoError(t, err)
+		require.NotNil(t, v)
+		require.Equal(t, "23.0.0", v)
+	}
+
+	t.Log("no buildToolsVersion")
 	{
 		content := `
 android {
@@ -73,6 +87,7 @@ android {
 		require.Error(t, err)
 		require.Equal(t, "", v)
 	}
+
 }
 
 func TestParseBuildGradle(t *testing.T) {
