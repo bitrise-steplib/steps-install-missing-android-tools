@@ -158,7 +158,7 @@ func main() {
 			if exist, err := pathutil.IsPathExists(moduleBuildGradleFile); err != nil {
 				failf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
 			} else if !exist {
-				log.Warnf("build.gradle file not found for module: %s at: %s, error: %s", module, moduleBuildGradleFile, err)
+				log.Warnf("build.gradle file not found for module: %s at: %s", module, moduleBuildGradleFile)
 				continue
 			}
 
@@ -293,7 +293,7 @@ func main() {
 				if installed, err := sdkManager.IsInstalled(extra); err != nil {
 					failf("Failed to check if Support Library installed, error: %s", err)
 				} else if !installed {
-					failf("Failed to update Support Library, error: %s", err)
+					failf("Failed to update Support Library")
 				}
 			}
 
@@ -327,7 +327,7 @@ func main() {
 				if installed, err := sdkManager.IsInstalled(extra); err != nil {
 					failf("Failed to check if Google Play Services installed, error: %s", err)
 				} else if !installed {
-					failf("Failed to update Google Play Services, error: %s", err)
+					failf("Failed to update Google Play Services")
 				}
 			}
 
