@@ -169,7 +169,7 @@ func parseBuildToolsVersion(buildGradleContent string) (string, error) {
 
 	split := strings.Split(buildToolsVersionStr, ".")
 	if len(split) != 3 {
-		log.Warnf("buildToolsVersion is not a semver version: %s", buildToolsVersionStr)
+		log.Warnf("buildToolsVersion is not a three-component version: %s", buildToolsVersionStr)
 		buildToolsVersionStr = parsedVersion.String()
 		log.Warnf("fixed buildToolsVersion: %s", buildToolsVersionStr)
 	}
