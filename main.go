@@ -1,42 +1,36 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
-	"github.com/bitrise-core/bitrise-init/utility"
+	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-steplib/steps-install-missing-android-tools/analyzer"
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 	"github.com/bitrise-tools/go-android/sdkmanager"
-	"github.com/bitrise-tools/go-steputils/tools"
-)
-
-const (
-	buildGradleBasename    = "build.gradle"
-	settingsGradleBasename = "settings.gradle"
+	version "github.com/hashicorp/go-version"
 )
 
 // ConfigsModel ...
 type ConfigsModel struct {
-	RootBuildGradleFile                 string
-	GradlewPath                         string
-	UpdateSupportLibraryAndPlayServices string
-	AndroidHome                         string
+	RootBuildGradleFile string
+	GradlewPath         string
+	AndroidHome         string
 }
 
 func createConfigsModelFromEnvs() ConfigsModel {
 	return ConfigsModel{
-		RootBuildGradleFile:                 os.Getenv("root_build_gradle_file"),
-		GradlewPath:                         os.Getenv("gradlew_path"),
-		UpdateSupportLibraryAndPlayServices: os.Getenv("update_support_library_and_play_services"),
-		AndroidHome:                         os.Getenv("ANDROID_HOME"),
+		RootBuildGradleFile: os.Getenv("root_build_gradle_file"),
+		GradlewPath:         os.Getenv("gradlew_path"),
+		AndroidHome:         os.Getenv("ANDROID_HOME"),
 	}
 }
 
@@ -45,7 +39,6 @@ func (configs ConfigsModel) print() {
 
 	log.Printf("- RootBuildGradleFile: %s", configs.RootBuildGradleFile)
 	log.Printf("- GradlewPath: %s", configs.GradlewPath)
-	log.Printf("- UpdateSupportLibraryAndPlayServices: %s", configs.UpdateSupportLibraryAndPlayServices)
 	log.Printf("- AndroidHome: %s", configs.AndroidHome)
 }
 
@@ -68,13 +61,6 @@ func (configs ConfigsModel) validate() error {
 		return fmt.Errorf("GradlewPath not exist at: %s", configs.GradlewPath)
 	}
 
-	if configs.UpdateSupportLibraryAndPlayServices == "" {
-		return errors.New("no UpdateSupportLibraryAndPlayServices parameter specified")
-	}
-	if configs.UpdateSupportLibraryAndPlayServices != "true" && configs.UpdateSupportLibraryAndPlayServices != "false" {
-		return fmt.Errorf("invalid UpdateSupportLibraryAndPlayServices provided: %s, vaialable: [true false]", configs.UpdateSupportLibraryAndPlayServices)
-	}
-
 	if configs.AndroidHome == "" {
 		return fmt.Errorf("no ANDROID_HOME set")
 	}
@@ -86,14 +72,73 @@ func (configs ConfigsModel) validate() error {
 // --- Functions
 // -----------------------
 
-func filterBuildGradleFiles(fileList []string) ([]string, error) {
-	allowBuildGradleBaseFilter := utility.BaseFilter(buildGradleBasename, true)
-	gradleFiles, err := utility.FilterPaths(fileList, allowBuildGradleBaseFilter)
-	if err != nil {
-		return []string{}, err
+// AutoDownloadSDKComponentsMinGradlePluginVersion ...
+var AutoDownloadSDKComponentsMinGradlePluginVersion = version.Must(version.NewVersion("2.2.0"))
+
+func androidGradlePluginVersionFromContent(rootBuildGradleContent string) (*version.Version, error) {
+	reader := strings.NewReader(rootBuildGradleContent)
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		// classpath 'com.android.tools.build:gradle:2.1.3'
+		pattern := `\s*classpath\s*'com.android.tools.build:gradle:(?P<version>[0-9.*]*)'\s*`
+		re := regexp.MustCompile(pattern)
+		if matches := re.FindStringSubmatch(line); len(matches) == 2 {
+			pluginVersionStr := matches[1]
+			pluginVersion, err := version.NewVersion(pluginVersionStr)
+			if err != nil {
+				return nil, err
+			}
+			return pluginVersion, nil
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 
-	return utility.SortPathsByComponents(gradleFiles)
+	return nil, fmt.Errorf("missing android gradle plugin version")
+}
+
+// AndroidGradlePluginVersion ...
+func AndroidGradlePluginVersion(rootBuildGradlePth string) (*version.Version, error) {
+	content, err := fileutil.ReadStringFromFile(rootBuildGradlePth)
+	if err != nil {
+		return nil, err
+	}
+
+	return androidGradlePluginVersionFromContent(content)
+}
+
+// EnsureAndroidLicences ...
+func EnsureAndroidLicences(androidHome string) error {
+	licenceMap := map[string]string{
+		"android-sdk-license":         "\n8933bad161af4178b1185d1a37fbf41ea5269c55",
+		"android-sdk-preview-license": "\n84831b9409646a918e30573bab4c9c91346d8abd",
+		"intel-android-extra-license": "\nd975f751698a77b662f1254ddbeed3901e976f5a",
+	}
+
+	licencesDir := filepath.Join(androidHome, "licenses")
+	if exist, err := pathutil.IsDirExists(licencesDir); err != nil {
+		return err
+	} else if !exist {
+		if err := os.Mkdir(licencesDir, os.ModePerm); err != nil {
+			return err
+		}
+	}
+
+	for name, content := range licenceMap {
+		pth := filepath.Join(licencesDir, name)
+
+		if exist, err := pathutil.IsPathExists(pth); err != nil {
+			return err
+		} else if !exist {
+			if err := fileutil.WriteStringToFile(pth, content); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func failf(format string, v ...interface{}) {
@@ -106,6 +151,7 @@ func failf(format string, v ...interface{}) {
 // -----------------------
 
 func main() {
+	//
 	// Input validation
 	configs := createConfigsModelFromEnvs()
 
@@ -117,264 +163,154 @@ func main() {
 	}
 
 	//
-	// Collect build.gradle files to analyze
 	fmt.Println()
-	log.Infof("Collect build.gradle files to analyze")
+	log.Infof("Step determined configs:")
 
 	rootBuildGradleFile, err := pathutil.AbsPath(configs.RootBuildGradleFile)
 	if err != nil {
 		failf("Failed to expand root build.gradle file path (%s), error: %s", configs.RootBuildGradleFile, err)
 	}
 
-	log.Printf("root build.gradle file: %s", rootBuildGradleFile)
+	log.Printf("- root build.gradle file: %s", rootBuildGradleFile)
 
-	buildGradleFilesToAnalyze := []string{}
-
-	// root settigs.gradle file should be in the same dir as root build.gradle file
-	rootBuildGradleDir := filepath.Dir(rootBuildGradleFile)
-	rootSettingsGradleFile := filepath.Join(rootBuildGradleDir, settingsGradleBasename)
-	if exist, err := pathutil.IsPathExists(rootSettingsGradleFile); err != nil {
-		failf("Failed to check if root settings.gradle exist at: %s, error: %s", rootSettingsGradleFile, err)
-	} else if !exist {
-		log.Warnf("no root settings.gradle file exist at: %s", rootSettingsGradleFile)
-		buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, rootBuildGradleFile)
-	} else {
-		log.Printf("root settings.gradle file: %s", rootSettingsGradleFile)
-
-		rootSettingsGradleContent, err := fileutil.ReadStringFromFile(rootSettingsGradleFile)
-		if err != nil {
-			failf("Failed to read settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-		}
-
-		modules, err := analyzer.ParseIncludedModules(rootSettingsGradleContent)
-		if err != nil {
-			failf("Failed to parse included modules from settings.gradle at: %s, error: %s", rootSettingsGradleFile, err)
-
-		}
-
-		log.Printf("active modules to analyze: %v", modules)
-
-		for _, module := range modules {
-			moduleBuildGradleFile := filepath.Join(rootBuildGradleDir, module, buildGradleBasename)
-			if exist, err := pathutil.IsPathExists(moduleBuildGradleFile); err != nil {
-				failf("Failed to check if %s's build.gradle exist at: %s, error: %s", module, moduleBuildGradleFile, err)
-			} else if !exist {
-				log.Warnf("build.gradle file not found for module: %s at: %s", module, moduleBuildGradleFile)
-				continue
-			}
-
-			buildGradleFilesToAnalyze = append(buildGradleFilesToAnalyze, moduleBuildGradleFile)
-		}
-	}
-
-	log.Printf("build.gradle files to analyze: %v", buildGradleFilesToAnalyze)
-	// ---
-
-	//
-	// Collect dependencies to ensure
-	fmt.Println()
-	log.Infof("Collect dependencies to ensure")
-
-	dependenciesToEnsure := []analyzer.ProjectDependenciesModel{}
-
-	for _, buildGradleFile := range buildGradleFilesToAnalyze {
-		log.Printf("Analyze build.gradle file: %s", buildGradleFile)
-
-		dependencies, err := analyzer.NewProjectDependencies(buildGradleFile, configs.GradlewPath)
-		if err != nil {
-			log.Errorf("Failed to analyze build.gradle at: %s, error: %s", buildGradleFile, err)
-			continue
-		}
-
-		dependenciesToEnsure = append(dependenciesToEnsure, dependencies)
-	}
-	// ---
-
-	//
-	// Ensure dependencies
-	fmt.Println()
-	log.Infof("Ensure dependencies")
-
-	androidSdk, err := sdk.New(configs.AndroidHome)
+	pluginVersion, err := AndroidGradlePluginVersion(rootBuildGradleFile)
 	if err != nil {
-		failf("Failed to create sdk, error: %s", err)
+		failf("Failed to determine android gradle plugin version, error: %s", err)
 	}
 
-	sdkManager, err := sdkmanager.New(androidSdk)
-	if err != nil {
-		failf("Failed to create sdk manager, error: %s", err)
-	}
+	log.Printf("- android gradle plugin version: %s", pluginVersion)
 
-	isSupportLibraryUpdated := false
-	isGooglePlayServicesUpdated := false
-	compileSDKVersionsMap := map[string]bool{}
-	buildToolsVersionsMap := map[string]bool{}
-
-	for _, dependencies := range dependenciesToEnsure {
-		// Ensure SDK
-		log.Printf("Checking compileSdkVersion: %s", dependencies.PlatformVersion)
-
-		platformComponent := sdkcomponent.Platform{
-			Version: dependencies.PlatformVersion,
-		}
-
-		if installed, err := sdkManager.IsInstalled(platformComponent); err != nil {
-			failf("Failed to check if sdk version (%s) installed, error: %s", dependencies.PlatformVersion, err)
-		} else if !installed {
-			log.Printf("compileSdkVersion: %s not installed, installing...", dependencies.PlatformVersion)
-
-			cmd := sdkManager.InstallCommand(platformComponent)
-			cmd.SetStdin(strings.NewReader("y"))
-			cmd.SetStdout(os.Stdout)
-			cmd.SetStderr(os.Stderr)
-
-			log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-			if err := cmd.Run(); err != nil {
-				failf("Failed to install sdk version (%s), error: %s", dependencies.PlatformVersion, err)
-			}
-		}
-
-		compileSDKVersionsMap[dependencies.PlatformVersion] = true
-
-		log.Donef("compileSdkVersion: %s installed", dependencies.PlatformVersion)
-
-		// Ensure build-tools
-		log.Printf("Checking buildToolsVersion: %s", dependencies.BuildToolsVersion)
-
-		buildToolComponent := sdkcomponent.BuildTool{
-			Version: dependencies.BuildToolsVersion,
-		}
-
-		if installed, err := sdkManager.IsInstalled(buildToolComponent); err != nil {
-			failf("Failed to check if build-tools (%s) installed, error: %s", dependencies.BuildToolsVersion, err)
-		} else if !installed {
-			log.Printf("buildToolsVersion: %s not installed, installing...", dependencies.BuildToolsVersion)
-
-			cmd := sdkManager.InstallCommand(buildToolComponent)
-			cmd.SetStdin(strings.NewReader("y"))
-			cmd.SetStdout(os.Stdout)
-			cmd.SetStderr(os.Stderr)
-
-			log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-			if err := cmd.Run(); err != nil {
-				failf("Failed to install build tools version (%s), error: %s", dependencies.BuildToolsVersion, err)
-			}
-
-			if installed, err := sdkManager.IsInstalled(buildToolComponent); err != nil {
-				failf("Failed to check if build tools version (%s) installed, error: %s", dependencies.BuildToolsVersion, err)
-			} else if !installed {
-				failf("Failed to install build tools version (%s)", dependencies.BuildToolsVersion)
-			}
-
-		}
-
-		buildToolsVersionsMap[dependencies.BuildToolsVersion] = true
-
-		log.Donef("buildToolsVersion: %s installed", dependencies.BuildToolsVersion)
-
-		// Ensure support-library
-		if dependencies.UseSupportLibrary && configs.UpdateSupportLibraryAndPlayServices == "true" && !isSupportLibraryUpdated {
-			log.Printf("Updating Support Library")
-
-			extras := []sdkcomponent.Extras{}
-			if sdkManager.IsLegacySDK() {
-				extras = sdkcomponent.LegacySupportLibraryInstallComponents()
-			} else {
-				extras = sdkcomponent.SupportLibraryInstallComponents()
-			}
-
-			for _, extra := range extras {
-				cmd := sdkManager.InstallCommand(extra)
-				cmd.SetStdin(strings.NewReader("y"))
-				cmd.SetStdout(os.Stdout)
-				cmd.SetStderr(os.Stderr)
-
-				log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-				if err := cmd.Run(); err != nil {
-					failf("Failed to update Support Library, error: %s", err)
-				}
-
-				if installed, err := sdkManager.IsInstalled(extra); err != nil {
-					failf("Failed to check if Support Library installed, error: %s", err)
-				} else if !installed {
-					failf("Failed to update Support Library")
-				}
-			}
-
-			isSupportLibraryUpdated = true
-			log.Donef("Support Library updated")
-		}
-
-		// Ensure google-play-services
-		if dependencies.UseGooglePlayServices && configs.UpdateSupportLibraryAndPlayServices == "true" && !isGooglePlayServicesUpdated {
-			log.Printf("Updating Google Play Services")
-
-			extras := []sdkcomponent.Extras{}
-			if sdkManager.IsLegacySDK() {
-				extras = sdkcomponent.LegacyGooglePlayServicesInstallComponents()
-			} else {
-				extras = sdkcomponent.GooglePlayServicesInstallComponents()
-			}
-
-			for _, extra := range extras {
-				cmd := sdkManager.InstallCommand(extra)
-				cmd.SetStdin(strings.NewReader("y"))
-				cmd.SetStdout(os.Stdout)
-				cmd.SetStderr(os.Stderr)
-
-				log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-				if err := cmd.Run(); err != nil {
-					failf("Failed to update Google Play Services, error: %s", err)
-				}
-
-				if installed, err := sdkManager.IsInstalled(extra); err != nil {
-					failf("Failed to check if Google Play Services installed, error: %s", err)
-				} else if !installed {
-					failf("Failed to update Google Play Services")
-				}
-			}
-
-			isGooglePlayServicesUpdated = true
-			log.Donef("Google Play Services updated")
-		}
-	}
-
-	if len(compileSDKVersionsMap) > 0 || len(buildToolsVersionsMap) > 0 {
+	if !pluginVersion.LessThan(AutoDownloadSDKComponentsMinGradlePluginVersion) {
 		fmt.Println()
-		log.Infof("Exporting step outputs")
+		log.Infof("Android Gradle Plugin version: %s will auto-download missing sdk components with Gradle", pluginVersion.String())
+
+		if err := EnsureAndroidLicences(configs.AndroidHome); err != nil {
+			failf("Failed to ensure android licences, error: %s", err)
+		}
+
+		cmd := command.New("./gradlew", "dependencies")
+		cmd.SetStdin(strings.NewReader("y"))
+		cmd.SetDir(filepath.Dir(configs.GradlewPath))
+
+		log.Printf("Ensure sdk components using: $ %s", cmd.PrintableCommandArgs())
+
+		if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+			log.Errorf("Command failed with output:")
+			log.Printf(out)
+			failf("%s", err)
+		} else {
+			log.Printf(out)
+		}
+	} else {
+		fmt.Println()
+		log.Warnf("Android Gradle Plugin version: %s will NOT auto-download missing sdk components", pluginVersion.String())
+
+		if err := EnsureAndroidLicences(configs.AndroidHome); err != nil {
+			failf("Failed to ensure android licences, error: %s", err)
+		}
+
+		androidSdk, err := sdk.New(configs.AndroidHome)
+		if err != nil {
+			failf("Failed to create sdk, error: %s", err)
+		}
+
+		sdkManager, err := sdkmanager.New(androidSdk)
+		if err != nil {
+			failf("Failed to create sdk manager, error: %s", err)
+		}
+
+		retry := true
+		for retry {
+			gradleCmd := command.New("./gradlew", "dependencies")
+			gradleCmd.SetStdin(strings.NewReader("y"))
+			gradleCmd.SetDir(filepath.Dir(configs.GradlewPath))
+
+			fmt.Println()
+			log.Printf("Searching for missing sdk components using:")
+			log.Printf("$ %s", gradleCmd.PrintableCommandArgs())
+
+			if out, err := gradleCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+				reader := strings.NewReader(out)
+				scanner := bufio.NewScanner(reader)
+
+				missingSDKComponentFound := false
+
+				for scanner.Scan() {
+					line := scanner.Text()
+
+					{
+						// failed to find target with hash string 'android-22'
+						targetPattern := `failed to find target with hash string 'android-(?P<version>.*)'\s*`
+						targetRe := regexp.MustCompile(targetPattern)
+						if matches := targetRe.FindStringSubmatch(line); len(matches) == 2 {
+							missingSDKComponentFound = true
+
+							targetVersion := "android-" + matches[1]
+
+							log.Warnf("Missing platform version found: %s", targetVersion)
+
+							platformComponent := sdkcomponent.Platform{
+								Version: targetVersion,
+							}
+
+							cmd := sdkManager.InstallCommand(platformComponent)
+							cmd.SetStdin(strings.NewReader("y"))
+
+							log.Printf("Installing platform version using:")
+							log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								log.Errorf("Command failed with output:")
+								log.Printf(out)
+								failf("%s", err)
+							}
+						}
+					}
+
+					{
+						// failed to find Build Tools revision 22.0.1
+						buildToolsPattern := `failed to find Build Tools revision (?P<version>[0-9.]*)\s*`
+						buildToolsRe := regexp.MustCompile(buildToolsPattern)
+						if matches := buildToolsRe.FindStringSubmatch(line); len(matches) == 2 {
+							missingSDKComponentFound = true
+
+							buildToolsVersion := matches[1]
+
+							log.Warnf("Missing build tools version found: %s", buildToolsVersion)
+
+							buildToolsComponent := sdkcomponent.BuildTool{
+								Version: buildToolsVersion,
+							}
+
+							cmd := sdkManager.InstallCommand(buildToolsComponent)
+							cmd.SetStdin(strings.NewReader("y"))
+
+							log.Printf("Installing build tools version using:")
+							log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								log.Errorf("Command failed with output:")
+								log.Printf(out)
+								failf("%s", err)
+							}
+						}
+					}
+				}
+
+				if err := scanner.Err(); err != nil {
+					failf("failed to analyze gradle output, error: %s", err)
+				}
+
+				if !missingSDKComponentFound {
+					log.Printf(out)
+					failf("%s", err)
+				}
+			} else {
+				retry = false
+			}
+		}
 	}
 
-	if len(compileSDKVersionsMap) > 0 {
-		compileSDKVersionsStr := ""
-		for compileSDKVersion := range compileSDKVersionsMap {
-			compileSDKVersionsStr += compileSDKVersion + "|"
-		}
-		compileSDKVersionsStr = strings.TrimSuffix(compileSDKVersionsStr, "|")
-
-		envKey := "COMPILE_SDK_VERSIONS"
-		if err := tools.ExportEnvironmentWithEnvman(envKey, compileSDKVersionsStr); err != nil {
-			log.Warnf("Failed to export %s, error: %s", envKey, err)
-		}
-
-		log.Donef("The compileSdkVersions are now available in the Environment Variable: %s (value: %s)", envKey, compileSDKVersionsStr)
-	}
-
-	if len(buildToolsVersionsMap) > 0 {
-		buildToolsVersionsStr := ""
-		for compileSDKVersion := range buildToolsVersionsMap {
-			buildToolsVersionsStr += compileSDKVersion + "|"
-		}
-		buildToolsVersionsStr = strings.TrimSuffix(buildToolsVersionsStr, "|")
-
-		envKey := "BUILD_TOOLS_VERSIONS"
-		if err := tools.ExportEnvironmentWithEnvman(envKey, buildToolsVersionsStr); err != nil {
-			log.Warnf("Failed to export %s, error: %s", envKey, err)
-		}
-
-		log.Donef("The buildToolsVersions are now available in the Environment Variable: %s (value: %s)", envKey, buildToolsVersionsStr)
-	}
+	fmt.Println()
+	log.Donef("Required SDK components are installed")
 }

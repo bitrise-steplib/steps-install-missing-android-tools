@@ -7,11 +7,6 @@
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/bitrise-core/bitrise-init/utility",
-			"Comment": "1.5.2",
-			"Rev": "5622d88c1c9e40ef9d52b61b26a6011b4d689a2f"
-		},
-		{
 			"ImportPath": "github.com/bitrise-io/go-utils/colorstring",
 			"Rev": "6eb582e08179a025ed2deb86ea6dffbd13ba1ff6"
 		},
@@ -48,32 +43,8 @@
 			"Rev": "00b72392d46cd594ca6a1c240ec9d8936127f4a4"
 		},
 		{
-			"ImportPath": "github.com/bitrise-tools/go-steputils/tools",
-			"Rev": "a848c9870ff7d745a8fb2a951e1c81fcb147b4ec"
-		},
-		{
-			"ImportPath": "github.com/davecgh/go-spew/spew",
-			"Comment": "v1.1.0-6-gadab964",
-			"Rev": "adab96458c51a58dc1783b3335dcce5461522e75"
-		},
-		{
 			"ImportPath": "github.com/hashicorp/go-version",
 			"Rev": "03c5bf6be031b6dd45afec16b1cf94fc8938bc77"
-		},
-		{
-			"ImportPath": "github.com/pmezard/go-difflib/difflib",
-			"Comment": "v1.0.0",
-			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
-		},
-		{
-			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.1.4-71-g890a5c3",
-			"Rev": "890a5c3458b43e6104ff5da8dfa139d013d77544"
-		},
-		{
-			"ImportPath": "github.com/stretchr/testify/require",
-			"Comment": "v1.1.4-71-g890a5c3",
-			"Rev": "890a5c3458b43e6104ff5da8dfa139d013d77544"
 		}
 	]
 }

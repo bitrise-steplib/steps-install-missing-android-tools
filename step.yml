@@ -1,14 +1,14 @@
-title: Install missing Android tools
-summary: Install missing Android tools
+title: Install missing Android SDK components
+summary: Install missing Android SDK components
 description: |-
-  This step analyze your root settings.gradle file, to collect the active build.gradle files.
+  This step makes sure that required Android SDK components (platforms and build-tools) are installed.
 
-  Based on the build.gradle files it will:
+  First, the step determines your project's Android Gradle Plugin version.
 
-  - install required `compileSdkVersion`s if missing
-  - install required `buildToolsVersion`s if missing
-  - update `Support Library` if used
-  - update `Google Play Services` if used
+  Then the step runs the `gradle dependencies` command.
+
+  If the Plugin version is 2.2.0 or later, the plugin will download and install the missing components during the Gradle command.   
+  Otherwise the command will fail, the step parses the command's output to determine which components are missing and installs them.
 website: https://github.com/bitrise-steplib/steps-install-missing-android-tools
 source_code_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools
 support_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools/issues
@@ -55,39 +55,3 @@ inputs:
         **The path should be relative** to the repository root, for example: `./gradlew`,
         or if it's in a sub directory: `./sub/dir/gradlew`.
       is_required: true
-  - update_support_library_and_play_services: "true"
-    opts:
-      category: Debug
-      title: "Should the step update `Support Library` and `Google Play Services`"
-      summary: ""
-      description: |-
-        If project uses `Support Library` and/or `Google Play Services` they will be updated by default.
-
-        Set this input to `"false"` if you wan to skip `Support Library` and/or `Google Play Services` updates.
-      value_options:
-      - "true"
-      - "false"
-      is_required: true
-outputs:
-  - COMPILE_SDK_VERSIONS:
-    opts:
-      title: The compileSdkVersions
-      description: |-
-        The compileSdkVersions used by the project.
-
-        If the project contains multiple modules,
-        this output will contain every different 
-        compileSdkVersion in a pipe (`|`) separated list:
-
-        `android-22|android-23`
-  - BUILD_TOOLS_VERSIONS:
-    opts:
-      title: The buildToolsVersions
-      description: |-
-        The buildToolsVersions used by the project.
-
-        If the project contains multiple modules,
-        this output will contain every different 
-        buildToolsVersion in a pipe (`|`) separated list:
-
-        `22.0.1|20.0.0`
