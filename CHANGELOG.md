@@ -1,6 +1,11 @@
-## Changelog (Current version: 1.1.0)
+## Changelog (Current version: 2.0.0)
 
 -----------------
+
+### 2.0.0 (2017 Aug 23)
+
+* [cfee6c0] prepare for 2.0.0
+* [d58c477] use `gradle dependencies` command to install missing components (#16)
 
 ### 1.1.0 (2017 Aug 10)
 
@@ -42,4 +47,4 @@
 
 -----------------
 
-Updated: 2017 Aug 10
+Updated: 2017 Aug 23
