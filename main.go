@@ -124,7 +124,7 @@ func main() {
 	}
 
 	fmt.Println()
-	log.Infof("Pereparation")
+	log.Infof("Preparation")
 
 	// Set executable permission for gradlew
 	log.Printf("Set executable permission for gradlew")
