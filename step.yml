@@ -3,18 +3,15 @@ summary: Install missing Android SDK components
 description: |-
   This step makes sure that required Android SDK components (platforms and build-tools) are installed.
 
-  First, the step determines your project's Android Gradle Plugin version.
-
-  Then the step runs the `gradle dependencies` command.
+  The step runs the `gradlew dependencies` command.
 
   If the Plugin version is 2.2.0 or later, the plugin will download and install the missing components during the Gradle command.   
-  Otherwise the command will fail, the step parses the command's output to determine which components are missing and installs them.
+  Otherwise the command will fail, the step parses the command's output to determine which SDK components are missing and installs them.
 website: https://github.com/bitrise-steplib/steps-install-missing-android-tools
 source_code_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools
 support_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools/issues
 project_type_tags:
   - android
-  - xamarin
   - cordova
   - ionic
   - react-native
