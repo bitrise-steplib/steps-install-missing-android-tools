@@ -1,6 +1,11 @@
-## Changelog (Current version: 2.0.0)
+## Changelog (Current version: 2.0.1)
 
 -----------------
+
+### 2.0.1 (2017 Aug 24)
+
+* [d64cd62] preparer for 2.0.1
+* [8b61805] Update (#18)
 
 ### 2.0.0 (2017 Aug 23)
 
@@ -47,4 +52,4 @@
 
 -----------------
 
-Updated: 2017 Aug 23
+Updated: 2017 Aug 24
