@@ -83,7 +83,7 @@ func EnsureAndroidLicences(androidHome string) error {
 	if exist, err := pathutil.IsDirExists(licencesDir); err != nil {
 		return err
 	} else if !exist {
-		if err := os.Mkdir(licencesDir, os.ModePerm); err != nil {
+		if err := os.MkdirAll(licencesDir, os.ModePerm); err != nil {
 			return err
 		}
 	}
