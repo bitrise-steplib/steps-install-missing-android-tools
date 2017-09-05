@@ -1,6 +1,11 @@
-## Changelog (Current version: 2.0.1)
+## Changelog (Current version: 2.0.2)
 
 -----------------
+
+### 2.0.2 (2017 Sep 05)
+
+* [6cc4e5c] prepare for 2.0.2
+* [69ede6a] mkdirall for licences directory (#19)
 
 ### 2.0.1 (2017 Aug 24)
 
@@ -52,4 +57,4 @@
 
 -----------------
 
-Updated: 2017 Aug 24
+Updated: 2017 Sep 05
