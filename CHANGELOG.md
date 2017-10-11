@@ -1,6 +1,13 @@
-## Changelog (Current version: 2.0.2)
+## Changelog (Current version: 2.0.3)
 
 -----------------
+
+### 2.0.3 (2017 Oct 11)
+
+* [565850b] Prepare for 2.0.3
+* [7b4120f] Merge pull request #23 from bitrise-steplib/fix/sdkmanager-licenses
+* [e1961a9] Overwrite license files
+* [e8dff36] Fix licenses
 
 ### 2.0.2 (2017 Sep 05)
 
@@ -57,4 +64,4 @@
 
 -----------------
 
-Updated: 2017 Sep 05
+Updated: 2017 Oct 11
