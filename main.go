@@ -94,12 +94,8 @@ func EnsureAndroidLicences(androidHome string) error {
 	for name, content := range licenceMap {
 		pth := filepath.Join(licencesDir, name)
 
-		if exist, err := pathutil.IsPathExists(pth); err != nil {
+		if err := fileutil.WriteStringToFile(pth, content); err != nil {
 			return err
-		} else if !exist {
-			if err := fileutil.WriteStringToFile(pth, content); err != nil {
-				return err
-			}
 		}
 	}
 
