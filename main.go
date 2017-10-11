@@ -74,7 +74,7 @@ func (configs ConfigsModel) validate() error {
 // EnsureAndroidLicences ...
 func EnsureAndroidLicences(androidHome string) error {
 	licenceMap := map[string]string{
-		"android-sdk-license":         "\n8933bad161af4178b1185d1a37fbf41ea5269c55",
+		"android-sdk-license":         "\n8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e",
 		"android-sdk-preview-license": "\n84831b9409646a918e30573bab4c9c91346d8abd",
 		"intel-android-extra-license": "\nd975f751698a77b662f1254ddbeed3901e976f5a",
 	}
