@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -71,8 +72,16 @@ func (configs ConfigsModel) validate() error {
 // --- Functions
 // -----------------------
 
-// EnsureAndroidLicences ...
-func EnsureAndroidLicences(androidHome string) error {
+func ensureAndroidLicences(androidHome string, isLegacySDK bool) error {
+	if !isLegacySDK {
+		licensesCmd := command.New(filepath.Join(androidHome, "tools/bin/sdkmanager"), "--licenses")
+		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 100))))
+		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+			return fmt.Errorf("%s - %s", out, err)
+		}
+		return nil
+	}
+
 	licenceMap := map[string]string{
 		"android-sdk-license":           "8933bad161af4178b1185d1a37fbf41ea5269c55\n\nd56f5187479451eabf01fb78af6dfcb131a6481e",
 		"android-googletv-license":      "\n601085b94cd77f0b54ff86406957099ebe79c4d6",
@@ -131,12 +140,6 @@ func main() {
 		failf("Failed to set executable permission for gradlew, error: %s", err)
 	}
 
-	// Ensure android licences
-	log.Printf("Ensure android licences")
-	if err := EnsureAndroidLicences(configs.AndroidHome); err != nil {
-		failf("Failed to ensure android licences, error: %s", err)
-	}
-
 	// Initialize Android SDK
 	log.Printf("Initialize Android SDK")
 	androidSdk, err := sdk.New(configs.AndroidHome)
@@ -147,6 +150,12 @@ func main() {
 	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		failf("Failed to create SDK manager, error: %s", err)
+	}
+
+	// Ensure android licences
+	log.Printf("Ensure android licences")
+	if err := ensureAndroidLicences(configs.AndroidHome, sdkManager.IsLegacySDK()); err != nil {
+		failf("Failed to ensure android licences, error: %s", err)
 	}
 
 	// Ensure required Android SDK components
