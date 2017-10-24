@@ -77,9 +77,14 @@ func ensureAndroidLicences(androidHome string, isLegacySDK bool) error {
 		licensesCmd := command.New(filepath.Join(androidHome, "tools/bin/sdkmanager"), "--licenses")
 		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
 		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-			return fmt.Errorf("%s - %s", out, err)
+			log.Printf("Failed to run command:")
+			log.Warnf("$ %s", licensesCmd.PrintableCommandArgs())
+			log.Printf("Output:\n%s\nError:\n%s", out, err)
+			fmt.Println()
+			log.Printf("")
+		} else {
+			return nil
 		}
-		return nil
 	}
 
 	licenceMap := map[string]string{
@@ -184,7 +189,6 @@ func main() {
 
 			for scanner.Scan() {
 				line := scanner.Text()
-
 				{
 					// failed to find target with hash string 'android-22'
 					targetPattern := `failed to find target with hash string 'android-(?P<version>.*)'\s*`
