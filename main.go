@@ -75,7 +75,7 @@ func (configs ConfigsModel) validate() error {
 func ensureAndroidLicences(androidHome string, isLegacySDK bool) error {
 	if !isLegacySDK {
 		licensesCmd := command.New(filepath.Join(androidHome, "tools/bin/sdkmanager"), "--licenses")
-		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 100))))
+		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
 		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			return fmt.Errorf("%s - %s", out, err)
 		}
