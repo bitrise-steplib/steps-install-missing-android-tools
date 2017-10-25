@@ -206,9 +206,16 @@ func main() {
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
 						if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+							if retryCount < 2 {
+								log.Errorf("Failed to install platform, retrying...")
+								retryCount++
+								continue
+							}
 							log.Errorf("Command failed with output:")
 							log.Printf(out)
 							failf("%s", err)
+						} else {
+							retryCount = 0
 						}
 					}
 				}
@@ -235,9 +242,16 @@ func main() {
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
 						if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+							if retryCount < 2 {
+								log.Errorf("Failed to install build tools, retrying...")
+								retryCount++
+								continue
+							}
 							log.Errorf("Command failed with output:")
 							log.Printf(out)
 							failf("%s", err)
+						} else {
+							retryCount = 0
 						}
 					}
 				}
@@ -248,7 +262,8 @@ func main() {
 			}
 
 			if !missingSDKComponentFound {
-				if retryCount <= 2 {
+				if retryCount < 2 {
+					log.Errorf("Failed to find missing components, retrying...")
 					retryCount++
 					continue
 				}
