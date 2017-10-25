@@ -167,19 +167,14 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure required Android SDK components")
 
-	retry := 1
-	for retry > 0 {
+	retryCount := 0
+	for true {
 		gradleCmd := command.New("./gradlew", "dependencies")
 		gradleCmd.SetStdin(strings.NewReader("y"))
 		gradleCmd.SetDir(filepath.Dir(configs.GradlewPath))
 
-		if retry > 1 {
-			fmt.Println()
-		}
 		log.Printf("Searching for missing SDK components using:")
 		log.Printf("$ %s", gradleCmd.PrintableCommandArgs())
-
-		retry++
 
 		if out, err := gradleCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			reader := strings.NewReader(out)
@@ -253,11 +248,15 @@ func main() {
 			}
 
 			if !missingSDKComponentFound {
+				if retryCount <= 2 {
+					retryCount++
+					continue
+				}
 				log.Printf(out)
 				failf("%s", err)
 			}
 		} else {
-			retry = 0
+			break
 		}
 	}
 
