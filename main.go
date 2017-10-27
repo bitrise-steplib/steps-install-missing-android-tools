@@ -9,11 +9,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 	"github.com/bitrise-tools/go-android/sdkmanager"
@@ -79,9 +81,8 @@ func ensureAndroidLicences(androidHome string, isLegacySDK bool) error {
 		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			log.Printf("Failed to run command:")
 			log.Warnf("$ %s", licensesCmd.PrintableCommandArgs())
-			log.Printf("Output:\n%s\nError:\n%s", out, err)
+			log.Printf("Output: %s, error: %s", out, err)
 			fmt.Println()
-			log.Printf("")
 		} else {
 			return nil
 		}
@@ -205,17 +206,22 @@ func main() {
 						log.Printf("Installing platform version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-						if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-							if retryCount < 2 {
-								log.Errorf("Failed to install platform, retrying...")
-								retryCount++
-								continue
+						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+							if attempt > 0 {
+								log.Warnf("Retrying...")
 							}
-							log.Errorf("Command failed with output:")
-							log.Printf(out)
+
+							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								if attempt > 0 {
+									return fmt.Errorf("output: %s, error: %s", out, err)
+								}
+								return err
+							}
+
+							return nil
+						}); err != nil {
+							log.Errorf("Failed to install platform:")
 							failf("%s", err)
-						} else {
-							retryCount = 0
 						}
 					}
 				}
@@ -241,17 +247,22 @@ func main() {
 						log.Printf("Installing build tools version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-						if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-							if retryCount < 2 {
-								log.Errorf("Failed to install build tools, retrying...")
-								retryCount++
-								continue
+						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+							if attempt > 0 {
+								log.Warnf("Retrying...")
 							}
-							log.Errorf("Command failed with output:")
-							log.Printf(out)
+
+							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								if attempt > 0 {
+									return fmt.Errorf("output: %s, error: %s", out, err)
+								}
+								return err
+							}
+
+							return nil
+						}); err != nil {
+							log.Errorf("Failed to install build tools:")
 							failf("%s", err)
-						} else {
-							retryCount = 0
 						}
 					}
 				}
