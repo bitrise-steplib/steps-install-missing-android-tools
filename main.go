@@ -2,17 +2,20 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 	"github.com/bitrise-tools/go-android/sdkmanager"
@@ -71,8 +74,20 @@ func (configs ConfigsModel) validate() error {
 // --- Functions
 // -----------------------
 
-// EnsureAndroidLicences ...
-func EnsureAndroidLicences(androidHome string) error {
+func ensureAndroidLicences(androidHome string, isLegacySDK bool) error {
+	if !isLegacySDK {
+		licensesCmd := command.New(filepath.Join(androidHome, "tools/bin/sdkmanager"), "--licenses")
+		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
+		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+			log.Printf("Failed to run command:")
+			log.Warnf("$ %s", licensesCmd.PrintableCommandArgs())
+			log.Printf("Output: %s, error: %s", out, err)
+			fmt.Println()
+		} else {
+			return nil
+		}
+	}
+
 	licenceMap := map[string]string{
 		"android-sdk-license":           "8933bad161af4178b1185d1a37fbf41ea5269c55\n\nd56f5187479451eabf01fb78af6dfcb131a6481e",
 		"android-googletv-license":      "\n601085b94cd77f0b54ff86406957099ebe79c4d6",
@@ -131,12 +146,6 @@ func main() {
 		failf("Failed to set executable permission for gradlew, error: %s", err)
 	}
 
-	// Ensure android licences
-	log.Printf("Ensure android licences")
-	if err := EnsureAndroidLicences(configs.AndroidHome); err != nil {
-		failf("Failed to ensure android licences, error: %s", err)
-	}
-
 	// Initialize Android SDK
 	log.Printf("Initialize Android SDK")
 	androidSdk, err := sdk.New(configs.AndroidHome)
@@ -149,23 +158,24 @@ func main() {
 		failf("Failed to create SDK manager, error: %s", err)
 	}
 
+	// Ensure android licences
+	log.Printf("Ensure android licences")
+	if err := ensureAndroidLicences(configs.AndroidHome, sdkManager.IsLegacySDK()); err != nil {
+		failf("Failed to ensure android licences, error: %s", err)
+	}
+
 	// Ensure required Android SDK components
 	fmt.Println()
 	log.Infof("Ensure required Android SDK components")
 
-	retry := 1
-	for retry > 0 {
+	retryCount := 0
+	for true {
 		gradleCmd := command.New("./gradlew", "dependencies")
 		gradleCmd.SetStdin(strings.NewReader("y"))
 		gradleCmd.SetDir(filepath.Dir(configs.GradlewPath))
 
-		if retry > 1 {
-			fmt.Println()
-		}
 		log.Printf("Searching for missing SDK components using:")
 		log.Printf("$ %s", gradleCmd.PrintableCommandArgs())
-
-		retry++
 
 		if out, err := gradleCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			reader := strings.NewReader(out)
@@ -175,7 +185,6 @@ func main() {
 
 			for scanner.Scan() {
 				line := scanner.Text()
-
 				{
 					// failed to find target with hash string 'android-22'
 					targetPattern := `failed to find target with hash string 'android-(?P<version>.*)'\s*`
@@ -197,9 +206,21 @@ func main() {
 						log.Printf("Installing platform version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-						if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-							log.Errorf("Command failed with output:")
-							log.Printf(out)
+						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+							if attempt > 0 {
+								log.Warnf("Retrying...")
+							}
+
+							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								if attempt > 0 {
+									return fmt.Errorf("output: %s, error: %s", out, err)
+								}
+								return err
+							}
+
+							return nil
+						}); err != nil {
+							log.Errorf("Failed to install platform:")
 							failf("%s", err)
 						}
 					}
@@ -226,9 +247,21 @@ func main() {
 						log.Printf("Installing build tools version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-						if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-							log.Errorf("Command failed with output:")
-							log.Printf(out)
+						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+							if attempt > 0 {
+								log.Warnf("Retrying...")
+							}
+
+							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								if attempt > 0 {
+									return fmt.Errorf("output: %s, error: %s", out, err)
+								}
+								return err
+							}
+
+							return nil
+						}); err != nil {
+							log.Errorf("Failed to install build tools:")
 							failf("%s", err)
 						}
 					}
@@ -240,11 +273,16 @@ func main() {
 			}
 
 			if !missingSDKComponentFound {
+				if retryCount < 2 {
+					log.Errorf("Failed to find missing components, retrying...")
+					retryCount++
+					continue
+				}
 				log.Printf(out)
 				failf("%s", err)
 			}
 		} else {
-			retry = 0
+			break
 		}
 	}
 

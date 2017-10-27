@@ -8,27 +8,31 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/colorstring",
-			"Rev": "6eb582e08179a025ed2deb86ea6dffbd13ba1ff6"
+			"Rev": "961320f9011cedf55e1da0578949bf63450a96c0"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/command",
-			"Rev": "6eb582e08179a025ed2deb86ea6dffbd13ba1ff6"
+			"Rev": "961320f9011cedf55e1da0578949bf63450a96c0"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/errorutil",
-			"Rev": "6eb582e08179a025ed2deb86ea6dffbd13ba1ff6"
+			"Rev": "961320f9011cedf55e1da0578949bf63450a96c0"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/fileutil",
-			"Rev": "6eb582e08179a025ed2deb86ea6dffbd13ba1ff6"
+			"Rev": "961320f9011cedf55e1da0578949bf63450a96c0"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/log",
-			"Rev": "6eb582e08179a025ed2deb86ea6dffbd13ba1ff6"
+			"Rev": "961320f9011cedf55e1da0578949bf63450a96c0"
 		},
 		{
 			"ImportPath": "github.com/bitrise-io/go-utils/pathutil",
-			"Rev": "6eb582e08179a025ed2deb86ea6dffbd13ba1ff6"
+			"Rev": "961320f9011cedf55e1da0578949bf63450a96c0"
+		},
+		{
+			"ImportPath": "github.com/bitrise-io/go-utils/retry",
+			"Rev": "961320f9011cedf55e1da0578949bf63450a96c0"
 		},
 		{
 			"ImportPath": "github.com/bitrise-tools/go-android/sdk",
@@ -44,7 +48,7 @@
 		},
 		{
 			"ImportPath": "github.com/hashicorp/go-version",
-			"Rev": "03c5bf6be031b6dd45afec16b1cf94fc8938bc77"
+			"Rev": "fc61389e27c71d120f87031ca8c88a3428f372dd"
 		}
 	]
 }
