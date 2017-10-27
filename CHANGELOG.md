@@ -1,6 +1,11 @@
-## Changelog (Current version: 2.0.3)
+## Changelog (Current version: 2.0.4)
 
 -----------------
+
+### 2.0.4 (2017 Oct 27)
+
+* [43326f4] Prepare for 2.0.4
+* [d461077] added sdkmanager --licenses ensure (#27)
 
 ### 2.0.3 (2017 Oct 11)
 
@@ -64,4 +69,4 @@
 
 -----------------
 
-Updated: 2017 Oct 11
+Updated: 2017 Oct 27
