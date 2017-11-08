@@ -1,6 +1,11 @@
-## Changelog (Current version: 2.0.4)
+## Changelog (Current version: 2.0.5)
 
 -----------------
+
+### 2.0.5 (2017 Nov 08)
+
+* [e812bc5] Prepare for 2.0.5
+* [c4d7112] removed log if --licenses command fails (#28)
 
 ### 2.0.4 (2017 Oct 27)
 
@@ -69,4 +74,4 @@
 
 -----------------
 
-Updated: 2017 Oct 27
+Updated: 2017 Nov 08
