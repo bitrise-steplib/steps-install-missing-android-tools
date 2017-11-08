@@ -78,10 +78,9 @@ func ensureAndroidLicences(androidHome string, isLegacySDK bool) error {
 	if !isLegacySDK {
 		licensesCmd := command.New(filepath.Join(androidHome, "tools/bin/sdkmanager"), "--licenses")
 		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
-		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-			log.Printf("Failed to run command:")
-			log.Warnf("$ %s", licensesCmd.PrintableCommandArgs())
-			log.Printf("Output: %s, error: %s", out, err)
+		if err := licensesCmd.Run(); err != nil {
+			log.Warnf("Failed to install licenses using $(sdkmanager --licenses) command")
+			log.Printf("Continue using legacy license installation...")
 			fmt.Println()
 		} else {
 			return nil
