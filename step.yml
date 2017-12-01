@@ -5,7 +5,8 @@ description: |-
 
   The step runs the `gradlew dependencies` command.
 
-  If the Plugin version is 2.2.0 or later, the plugin will download and install the missing components during the Gradle command.   
+  If the _Android Plugin for Gradle_ version is 2.2.0 or higher, the plugin will download and install the missing components during the Gradle command.
+
   Otherwise the command will fail, the step parses the command's output to determine which SDK components are missing and installs them.
 website: https://github.com/bitrise-steplib/steps-install-missing-android-tools
 source_code_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools
