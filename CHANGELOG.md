@@ -1,6 +1,13 @@
-## Changelog (Current version: 2.0.5)
+## Changelog (Current version: 2.0.6)
 
 -----------------
+
+### 2.0.6 (2017 Dec 01)
+
+* [d799948] Bump version to 2.0.6
+* [624d19a] Merge pull request #30 from bitrise-steplib/plugin-version
+* [1485576] Add newline for step description
+* [4a9c7e8] Fix step description ambiguity
 
 ### 2.0.5 (2017 Nov 08)
 
@@ -74,4 +81,4 @@
 
 -----------------
 
-Updated: 2017 Nov 08
+Updated: 2017 Dec 01
