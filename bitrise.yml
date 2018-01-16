@@ -272,28 +272,17 @@ workflows:
 
   # ----------------------------------------------------------------
   # --- Utility workflows
-  godeps-update:
-    title: Godeps update
-    description: |
-      Used for updating bitrise dependencies with godep
+  dep-update:
+    title: Update the locked versions of all dependencies
     steps:
     - script:
-        title: Dependency update
         inputs:
-        - content: |
-            #!/bin/bash
-            set -ex
-            go get -u -v github.com/tools/godep
+        - content: |-
+            #!/usr/bin/env bash
+            set -x
 
-            go get github.com/davecgh/go-spew/spew
-            go get github.com/pmezard/go-difflib/difflib
-            go get github.com/bitrise-tools/go-xcode/xcodeproj
-
-            rm -rf ./Godeps
-            rm -rf ./vendor
-
-            go get -t -d ./...
-            godep save ./...
+            go get -u -v github.com/golang/dep/cmd/dep
+            dep ensure -update -v
 
   # ----------------------------------------------------------------
   # --- workflows to create Release
