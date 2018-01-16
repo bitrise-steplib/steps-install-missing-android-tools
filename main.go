@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bitrise-tools/go-steputils/input"
+
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
@@ -23,48 +25,30 @@ import (
 
 // ConfigsModel ...
 type ConfigsModel struct {
-	RootBuildGradleFile string
-	GradlewPath         string
-	AndroidHome         string
+	GradlewPath string
+	AndroidHome string
 }
 
 func createConfigsModelFromEnvs() ConfigsModel {
 	return ConfigsModel{
-		RootBuildGradleFile: os.Getenv("root_build_gradle_file"),
-		GradlewPath:         os.Getenv("gradlew_path"),
-		AndroidHome:         os.Getenv("ANDROID_HOME"),
+		GradlewPath: os.Getenv("gradlew_path"),
+		AndroidHome: os.Getenv("ANDROID_HOME"),
 	}
 }
 
 func (configs ConfigsModel) print() {
 	log.Infof("Configs:")
-
-	log.Printf("- RootBuildGradleFile: %s", configs.RootBuildGradleFile)
 	log.Printf("- GradlewPath: %s", configs.GradlewPath)
 	log.Printf("- AndroidHome: %s", configs.AndroidHome)
 }
 
 func (configs ConfigsModel) validate() error {
-	if configs.RootBuildGradleFile == "" {
-		return errors.New("no RootBuildGradleFile parameter specified")
-	}
-	if exist, err := pathutil.IsPathExists(configs.RootBuildGradleFile); err != nil {
-		return fmt.Errorf("failed to check if RootBuildGradleFile exist at: %s, error: %s", configs.RootBuildGradleFile, err)
-	} else if !exist {
-		return fmt.Errorf("RootBuildGradleFile not exist at: %s", configs.RootBuildGradleFile)
+	if err := input.ValidateIfPathExists(configs.GradlewPath); err != nil {
+		return errors.New("Issue with input GradlewPath: " + err.Error())
 	}
 
-	if configs.GradlewPath == "" {
-		return errors.New("no GradlewPath parameter specified")
-	}
-	if exist, err := pathutil.IsPathExists(configs.GradlewPath); err != nil {
-		return fmt.Errorf("failed to check if GradlewPath exist at: %s, error: %s", configs.GradlewPath, err)
-	} else if !exist {
-		return fmt.Errorf("GradlewPath not exist at: %s", configs.GradlewPath)
-	}
-
-	if configs.AndroidHome == "" {
-		return fmt.Errorf("no ANDROID_HOME set")
+	if err := input.ValidateIfNotEmpty(configs.AndroidHome); err != nil {
+		return errors.New("Issue with input AndroidHome: " + err.Error())
 	}
 
 	return nil
@@ -133,7 +117,7 @@ func main() {
 	configs.print()
 
 	if err := configs.validate(); err != nil {
-		failf("Issue with input: %s", err)
+		failf(err.Error())
 	}
 
 	fmt.Println()
