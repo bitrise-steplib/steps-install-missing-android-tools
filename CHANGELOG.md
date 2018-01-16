@@ -1,6 +1,11 @@
-## Changelog (Current version: 2.0.6)
+## Changelog (Current version: 2.1.0)
 
 -----------------
+
+### 2.1.0 (2018 Jan 16)
+
+* [27c92fc] prepare for 2.1.0
+* [6bd3b24] removed unused `root_build_gradle_file` input, migrate to dep (#31)
 
 ### 2.0.6 (2017 Dec 01)
 
@@ -81,4 +86,4 @@
 
 -----------------
 
-Updated: 2017 Dec 01
+Updated: 2018 Jan 16
