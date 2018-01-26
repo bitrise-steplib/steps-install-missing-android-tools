@@ -168,7 +168,6 @@ func main() {
 
 			for scanner.Scan() {
 				line := scanner.Text()
-				fmt.Println(line)
 				{
 					// failed to find target with hash string 'android-22'
 					targetPattern := `failed to find target with hash string 'android-(?P<version>.*)'\s*`
@@ -290,7 +289,7 @@ func main() {
 
 								return nil
 							}); err != nil {
-								log.Errorf("Failed to install build tools:")
+								log.Errorf("Failed to install support library dependency:")
 								failf("%s", err)
 							}
 						}
