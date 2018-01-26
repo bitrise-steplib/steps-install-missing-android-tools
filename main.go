@@ -249,6 +249,52 @@ func main() {
 						}
 					}
 				}
+
+				{
+					// Example: "Could not find com.android.support.constraint:constraint-layout:1.0.2."
+					extrasPattern := `Could not find (?P<package>com\.android\.support\..*)\.`
+					extrasRe := regexp.MustCompile(extrasPattern)
+					if matches := extrasRe.FindStringSubmatch(line); len(matches) == 2 {
+						missingSDKComponentFound = true
+
+						log.Warnf("Missing extras library found: %s", matches[1])
+
+						lib := matches[1]
+						firstColon := strings.Index(lib, ":")
+						lib = strings.Replace(lib[:firstColon], ".", ";", -1) + strings.Replace(lib[firstColon:], ":", ";", -1)
+
+						extrasComponents := sdkcomponent.SupportLibraryInstallComponents()
+						extrasComponents = append(extrasComponents, sdkcomponent.Extras{
+							Provider:    "m2repository",
+							PackageName: lib,
+						})
+						for _, e := range extrasComponents {
+							cmd := sdkManager.InstallCommand(e)
+							cmd.SetStdin(strings.NewReader("y"))
+
+							log.Printf("Installing extras using:")
+							log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+							if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+								if attempt > 0 {
+									log.Warnf("Retrying...")
+								}
+
+								if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+									if attempt > 0 {
+										return fmt.Errorf("output: %s, error: %s", out, err)
+									}
+									return err
+								}
+
+								return nil
+							}); err != nil {
+								log.Errorf("Failed to install support library dependency:")
+								failf("%s", err)
+							}
+						}
+					}
+				}
 			}
 
 			if err := scanner.Err(); err != nil {
