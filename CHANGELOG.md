@@ -1,6 +1,11 @@
-## Changelog (Current version: 2.1.0)
+## Changelog (Current version: 2.1.1)
 
 -----------------
+
+### 2.1.1 (2018 Jan 26)
+
+* [cca8c8e] Bump version to 2.1.1
+* [8207e2b] Install support repositories and missing packages (#32)
 
 ### 2.1.0 (2018 Jan 16)
 
@@ -86,4 +91,4 @@
 
 -----------------
 
-Updated: 2018 Jan 16
+Updated: 2018 Jan 26
