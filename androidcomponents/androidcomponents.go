@@ -27,33 +27,22 @@ type logger interface {
 	Errorf(string, ...interface{})
 }
 
-var log logger
-
-// New ...
-func New(androidSdk *sdk.Model) Info {
-	log = _log.NewDummyLogger()
-	return Info{androidSdk}
-}
-
-// Info ...
-type Info struct {
-	androidSdk *sdk.Model
-}
+var log logger = _log.NewDummyLogger()
 
 // SetLogger ...
-func (i Info) SetLogger(l logger) {
+func SetLogger(l logger) {
 	log = l
 }
 
 // InstallLicences ...
-func (i Info) InstallLicences() error {
-	sdkManager, err := sdkmanager.New(i.androidSdk)
+func InstallLicences(androidSdk *sdk.Model) error {
+	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		return err
 	}
 
 	if !sdkManager.IsLegacySDK() {
-		licensesCmd := command.New(filepath.Join(i.androidSdk.GetAndroidHome(), "tools/bin/sdkmanager"), "--licenses")
+		licensesCmd := command.New(filepath.Join(androidSdk.GetAndroidHome(), "tools/bin/sdkmanager"), "--licenses")
 		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
 		if err := licensesCmd.Run(); err != nil {
 			log.Warnf("Failed to install licenses using $(sdkmanager --licenses) command")
@@ -73,7 +62,7 @@ func (i Info) InstallLicences() error {
 		"mips-android-sysimage-license": "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d",
 	}
 
-	licencesDir := filepath.Join(i.androidSdk.GetAndroidHome(), "licenses")
+	licencesDir := filepath.Join(androidSdk.GetAndroidHome(), "licenses")
 	if exist, err := pathutil.IsDirExists(licencesDir); err != nil {
 		return err
 	} else if !exist {
@@ -93,8 +82,9 @@ func (i Info) InstallLicences() error {
 	return nil
 }
 
-func (i Info) Ensure(gradlewPath string) error {
-	sdkManager, err := sdkmanager.New(i.androidSdk)
+// Ensure ...
+func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
+	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		return err
 	}

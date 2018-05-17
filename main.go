@@ -83,14 +83,12 @@ func main() {
 		failf("Failed to initialize Android SDK, error: %s", err)
 	}
 
-	// Initialize Android Components
-	androidComponents := androidcomponents.New(androidSdk)
-	androidComponents.SetLogger(log.NewDefaultLogger(false))
+	androidcomponents.SetLogger(log.NewDefaultLogger(false))
 
 	// Ensure android licences
 	log.Printf("Ensure android licences")
 
-	if err := androidComponents.InstallLicences(); err != nil {
+	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
 		failf("Failed to ensure android licences, error: %s", err)
 	}
 
@@ -98,7 +96,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure required Android SDK components")
 
-	if err := androidComponents.Ensure(configs.GradlewPath); err != nil {
+	if err := androidcomponents.Ensure(androidSdk, configs.GradlewPath); err != nil {
 		failf("Failed to ensure android components, error: %s", err)
 	}
 
