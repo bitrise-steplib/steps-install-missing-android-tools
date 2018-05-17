@@ -17,7 +17,7 @@ workflows:
     - GRADLE_BUILD_FILE_PATH: build.gradle
     - GRADLEW_PATH: ./gradlew
     before_run:
-    #- go-tests
+    - go-tests
     steps:
     - script:
         inputs:
