@@ -6,7 +6,6 @@ workflows:
     before_run:
     - _install_test_tools
     - test
-    - integration-test
     
   test:
     steps:
@@ -71,14 +70,4 @@ workflows:
             go get -u -v github.com/bitrise-io/go-utils/pathutil
             go get -u -v github.com/bitrise-io/go-utils/command
             go get -u -v github.com/hashicorp/go-version
-
-  integration-test:
-    steps:
-    - script:
-        title: Run integration tests
-        inputs:
-        - content: |-
-            #!/bin/bash
-            echo "Running integration tests ..."
-            set -ex
-            go test -v ./_tests/integration/... -timeout 120m
+            go get -u -v github.com/ryanuber/go-glob
