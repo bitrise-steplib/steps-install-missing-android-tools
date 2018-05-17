@@ -13,7 +13,7 @@
     "pathutil",
     "retry"
   ]
-  revision = "b33f6bcef9b50045d7e62364b354584afc3ee329"
+  revision = "d1de0dbcb811588e61362aff67bb700b93c13c17"
 
 [[projects]]
   branch = "master"
@@ -23,19 +23,19 @@
     "sdkcomponent",
     "sdkmanager"
   ]
-  revision = "00b72392d46cd594ca6a1c240ec9d8936127f4a4"
+  revision = "5e32d58739d3376ecd9e74fc1eee44c0f00984e5"
 
 [[projects]]
   branch = "master"
   name = "github.com/bitrise-tools/go-steputils"
   packages = ["input"]
-  revision = "fde82e0ff3c0643076950c8642142207845eaa39"
+  revision = "d4d9e08cc4347e8784bb18419fcdceb932e17019"
 
 [[projects]]
   branch = "master"
   name = "github.com/hashicorp/go-version"
   packages = ["."]
-  revision = "4fe82ae3040f80a03d04d2cccb5606a626b8e1ee"
+  revision = "23480c0665776210b5fbbac6eaaee40e3e6a96b7"
 
 [solve-meta]
   analyzer-name = "dep"
