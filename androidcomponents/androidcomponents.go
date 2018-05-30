@@ -104,6 +104,8 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 
 			missingSDKComponentFound := false
 
+			commandOutputs := map[string]string{}
+
 			for scanner.Scan() {
 				line := scanner.Text()
 				{
@@ -121,17 +123,24 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 						log.Printf("Installing NDK bundle using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
+						if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+							return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
+						}
+
 						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 							if attempt > 0 {
 								log.Warnf("Retrying...")
 							}
 
-							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+							out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+							if err != nil {
 								if attempt > 0 {
 									return fmt.Errorf("output: %s, error: %s", out, err)
 								}
 								return err
 							}
+
+							commandOutputs[cmd.PrintableCommandArgs()] = out
 
 							return nil
 						}); err != nil {
@@ -160,17 +169,24 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 						log.Printf("Installing platform version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
+						if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+							return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
+						}
+
 						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 							if attempt > 0 {
 								log.Warnf("Retrying...")
 							}
 
-							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+							out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+							if err != nil {
 								if attempt > 0 {
 									return fmt.Errorf("output: %s, error: %s", out, err)
 								}
 								return err
 							}
+
+							commandOutputs[cmd.PrintableCommandArgs()] = out
 
 							return nil
 						}); err != nil {
@@ -200,17 +216,24 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 						log.Printf("Installing build tools version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
+						if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+							return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
+						}
+
 						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 							if attempt > 0 {
 								log.Warnf("Retrying...")
 							}
 
-							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+							out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+							if err != nil {
 								if attempt > 0 {
 									return fmt.Errorf("output: %s, error: %s", out, err)
 								}
 								return err
 							}
+
+							commandOutputs[cmd.PrintableCommandArgs()] = out
 
 							return nil
 						}); err != nil {
@@ -244,17 +267,24 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 							log.Printf("Installing extras using:")
 							log.Printf("$ %s", cmd.PrintableCommandArgs())
 
+							if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+								return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
+							}
+
 							if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 								if attempt > 0 {
 									log.Warnf("Retrying...")
 								}
 
-								if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+								if err != nil {
 									if attempt > 0 {
 										return fmt.Errorf("output: %s, error: %s", out, err)
 									}
 									return err
 								}
+
+								commandOutputs[cmd.PrintableCommandArgs()] = out
 
 								return nil
 							}); err != nil {
