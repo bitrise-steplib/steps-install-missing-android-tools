@@ -116,20 +116,16 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 
 						ndkComponent := sdkcomponent.SDKTool{SDKStylePath: "ndk-bundle", LegacySDKStylePath: "ndk-bundle"}
 
-						cmd := sdkManager.InstallCommand(ndkComponent)
-						cmd.SetStdin(strings.NewReader("y"))
-
-						log.Printf("Installing NDK bundle using:")
-						log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-						if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-							return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
-						}
-
 						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 							if attempt > 0 {
 								log.Warnf("Retrying...")
 							}
+
+							cmd := sdkManager.InstallCommand(ndkComponent)
+							cmd.SetStdin(strings.NewReader("y"))
+
+							log.Printf("Installing NDK bundle using:")
+							log.Printf("$ %s", cmd.PrintableCommandArgs())
 
 							out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 							if err != nil {
@@ -139,6 +135,9 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 								return err
 							}
 
+							if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
+							}
 							commandOutputs[cmd.PrintableCommandArgs()] = out
 
 							return nil
@@ -168,10 +167,6 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 						log.Printf("Installing platform version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-						if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-							return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
-						}
-
 						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 							if attempt > 0 {
 								log.Warnf("Retrying...")
@@ -185,6 +180,9 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 								return err
 							}
 
+							if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
+							}
 							commandOutputs[cmd.PrintableCommandArgs()] = out
 
 							return nil
@@ -215,10 +213,6 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 						log.Printf("Installing build tools version using:")
 						log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-						if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-							return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
-						}
-
 						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 							if attempt > 0 {
 								log.Warnf("Retrying...")
@@ -232,6 +226,9 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 								return err
 							}
 
+							if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
+							}
 							commandOutputs[cmd.PrintableCommandArgs()] = out
 
 							return nil
@@ -266,10 +263,6 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 							log.Printf("Installing extras using:")
 							log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-							if out, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-								return fmt.Errorf("the command: (%s) already ran with output: %s", cmd.PrintableCommandArgs(), out)
-							}
-
 							if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 								if attempt > 0 {
 									log.Warnf("Retrying...")
@@ -283,6 +276,9 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 									return err
 								}
 
+								if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
+									return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
+								}
 								commandOutputs[cmd.PrintableCommandArgs()] = out
 
 								return nil
