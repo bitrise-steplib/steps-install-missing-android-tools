@@ -7,7 +7,6 @@ app:
 
   # define these in your .bitrise.secrets.yml
   - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-sdk21-tools-21.0.1.git
-  - NDK_SAMPLE_APP_URL: https://github.com/bitrise-samples/android-ndk-sample-project.git
   - BRANCH: master
 
 workflows:
@@ -49,19 +48,32 @@ workflows:
             [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
     - path::./:
         title: Step test
-    - change-workdir:
-        title: Switch working dir to test / _tmp dir
-        run_if: true
-        inputs:
-        - path: ..
-        - is_create_path: true
+
+  ci:
+    before_run:
+    - go-tests
+    after_run:
+    - test_ndk
+    - test_old_gradle
+    - test_android-sdk21-tools-21.0.1
+    - test_android-sdk20
+    - test_android-sdk22-subdir
+    - test_react_native
+
+  test_ndk:
+    envs:
+    - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-ndk-sample-project.git
+    - BRANCH: master
+    - GRADLE_BUILD_FILE_PATH: ./build.gradle
+    - GRADLEW_PATH: ./gradlew
+    - ANDROID_NDK_HOME: ""
+    steps:
     - script:
         inputs:
         - content: |-
             #!/bin/bash
             set -e
             rm -rf ./_tmp
-            rm -rf $ANDROID_HOME/ndk-bundle
     - change-workdir:
         title: Switch working dir to test / _tmp dir
         run_if: true
@@ -72,31 +84,27 @@ workflows:
         inputs:
         - content: |-
             #!/usr/bin/env bash
-            if [[ -z "${NDK_SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no NDK_SAMPLE_APP_URL env var specified"
+            if [[ -z "${SAMPLE_APP_URL}" ]]; then
+              echo "error: there is no SAMPLE_APP_URL env var specified"
               exit 1
             elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
               echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
               exit 1
             fi
             git init
-            git remote add origin "${NDK_SAMPLE_APP_URL}"
+            git remote add origin "${SAMPLE_APP_URL}"
             git fetch || exit 1
             [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            rm -rf $ANDROID_HOME/ndk-bundle
     - path::./:
-        title: Step test
+        title: Step test installing ndk
     - path::./:
-        title: Step test
-
-  ci:
-    before_run:
-    - go-tests
-    after_run:
-    - test_old_gradle
-    - test_android-sdk21-tools-21.0.1
-    - test_android-sdk20
-    - test_android-sdk22-subdir
-    - test_react_native
+        title: Step test installed ndk
 
   test_react_native:
     envs:
