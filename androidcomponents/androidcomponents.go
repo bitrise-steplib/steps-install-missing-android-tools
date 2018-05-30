@@ -19,6 +19,7 @@ import (
 	_log "github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-tools/go-steputils/tools"
 )
 
 type logger interface {
@@ -139,6 +140,14 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s\noriginal output: %s", cmd.PrintableCommandArgs(), previousOut, cmdout, out)
 							}
 							commandOutputs[cmd.PrintableCommandArgs()] = cmdout
+
+							if err := os.Setenv("ANDROID_NDK_HOME", "$ANDROID_HOME/ndk-bundle"); err != nil {
+								return err
+							}
+
+							if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", "$ANDROID_HOME/ndk-bundle"); err != nil {
+								return err
+							}
 
 							return nil
 						}); err != nil {
