@@ -107,6 +107,39 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 			for scanner.Scan() {
 				line := scanner.Text()
 				{
+					// NDK not configured
+					targetPattern := `(NDK not configured)`
+					targetRe := regexp.MustCompile(targetPattern)
+					if matches := targetRe.FindStringSubmatch(line); len(matches) == 2 {
+						missingSDKComponentFound = true
+
+						ndkComponent := sdkcomponent.SDKTool{SDKStylePath: "ndk-bundle", LegacySDKStylePath: "ndk-bundle"}
+
+						cmd := sdkManager.InstallCommand(ndkComponent)
+						cmd.SetStdin(strings.NewReader("y"))
+
+						log.Printf("Installing NDK bundle using:")
+						log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+							if attempt > 0 {
+								log.Warnf("Retrying...")
+							}
+
+							if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+								if attempt > 0 {
+									return fmt.Errorf("output: %s, error: %s", out, err)
+								}
+								return err
+							}
+
+							return nil
+						}); err != nil {
+							return fmt.Errorf("failed to install NDK bundle:\n%s", err)
+						}
+					}
+				}
+				{
 					// failed to find target with hash string 'android-22'
 					targetPattern := `failed to find target with hash string 'android-(?P<version>.*)'\s*`
 					targetRe := regexp.MustCompile(targetPattern)
@@ -242,7 +275,7 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 					retryCount++
 					continue
 				}
-				return fmt.Errorf("%s/n%s", out, err)
+				return fmt.Errorf("%s\n%s", out, err)
 			}
 		} else {
 			break
