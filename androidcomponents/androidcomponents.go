@@ -90,6 +90,7 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 	}
 
 	retryCount := 0
+	commandOutputs := map[string]string{}
 	for true {
 		gradleCmd := command.New("./gradlew", "dependencies")
 		gradleCmd.SetStdin(strings.NewReader("y"))
@@ -103,8 +104,6 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 			scanner := bufio.NewScanner(reader)
 
 			missingSDKComponentFound := false
-
-			commandOutputs := map[string]string{}
 
 			for scanner.Scan() {
 				line := scanner.Text()
