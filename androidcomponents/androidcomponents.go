@@ -127,18 +127,18 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 							log.Printf("Installing NDK bundle using:")
 							log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-							out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+							cmdout, err := cmd.RunAndReturnTrimmedCombinedOutput()
 							if err != nil {
 								if attempt > 0 {
-									return fmt.Errorf("output: %s, error: %s", out, err)
+									return fmt.Errorf("output: %s, error: %s", cmdout, err)
 								}
 								return err
 							}
 
 							if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
+								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s\noriginal output: %s", cmd.PrintableCommandArgs(), previousOut, cmdout, out)
 							}
-							commandOutputs[cmd.PrintableCommandArgs()] = out
+							commandOutputs[cmd.PrintableCommandArgs()] = cmdout
 
 							return nil
 						}); err != nil {
