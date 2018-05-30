@@ -83,6 +83,20 @@ func InstallLicences(androidSdk *sdk.Model) error {
 	return nil
 }
 
+// func scanDependencies(cases map[string]*command.Model) {
+// 	// "NDK not configured"
+// 	// "failed to find target with hash string 'android-22'"
+// 	// "failed to find Build Tools revision 22.0.1"
+// 	// "Could not find com.android.support.constraint:constraint-layout:1.0.2."
+// }
+
+// func getDependenciesOutput(projectLocation string) (string, error) {
+// 	gradleCmd := command.New("./gradlew", "dependencies")
+// 	gradleCmd.SetStdin(strings.NewReader("y"))
+// 	gradleCmd.SetDir(projectLocation)
+// 	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
+// }
+
 // Ensure ...
 func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 	sdkManager, err := sdkmanager.New(androidSdk)
@@ -141,11 +155,11 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 							}
 							commandOutputs[cmd.PrintableCommandArgs()] = cmdout
 
-							if err := os.Setenv("ANDROID_NDK_HOME", "$ANDROID_HOME/ndk-bundle"); err != nil {
+							if err := os.Setenv("ANDROID_NDK_HOME", filepath.Join(os.Getenv("ANDROID_HOME"), "ndk-bundle")); err != nil {
 								return err
 							}
 
-							if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", "$ANDROID_HOME/ndk-bundle"); err != nil {
+							if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", filepath.Join(os.Getenv("ANDROID_HOME"), "ndk-bundle")); err != nil {
 								return err
 							}
 
