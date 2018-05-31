@@ -8,18 +8,18 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
+
+	"github.com/bitrise-io/go-utils/sliceutil"
 
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
 	"github.com/bitrise-tools/go-android/sdkmanager"
+	"github.com/bitrise-tools/go-steputils/tools"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	_log "github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-tools/go-steputils/tools"
 )
 
 type logger interface {
@@ -29,6 +29,12 @@ type logger interface {
 }
 
 var log logger = _log.NewDummyLogger()
+
+type installer struct {
+	androidSDK  *sdk.Model
+	sdkManager  *sdkmanager.Model
+	gradlewPath string
+}
 
 // SetLogger ...
 func SetLogger(l logger) {
@@ -83,251 +89,164 @@ func InstallLicences(androidSdk *sdk.Model) error {
 	return nil
 }
 
-// func scanDependencies(cases map[string]*command.Model) {
-// 	// "NDK not configured"
-// 	// "failed to find target with hash string 'android-22'"
-// 	// "failed to find Build Tools revision 22.0.1"
-// 	// "Could not find com.android.support.constraint:constraint-layout:1.0.2."
-// }
-
-// func getDependenciesOutput(projectLocation string) (string, error) {
-// 	gradleCmd := command.New("./gradlew", "dependencies")
-// 	gradleCmd.SetStdin(strings.NewReader("y"))
-// 	gradleCmd.SetDir(projectLocation)
-// 	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
-// }
-
 // Ensure ...
 func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		return err
 	}
+	i := installer{
+		androidSdk,
+		sdkManager,
+		gradlewPath,
+	}
+	return i.scanDependencies()
+}
 
-	retryCount := 0
-	commandOutputs := map[string]string{}
-	for true {
-		gradleCmd := command.New("./gradlew", "dependencies")
-		gradleCmd.SetStdin(strings.NewReader("y"))
-		gradleCmd.SetDir(filepath.Dir(gradlewPath))
+func (i installer) getDependencyCases() map[string]func(match string) error {
+	return map[string]func(match string) error{
+		`(Observed package id 'ndk-bundle' in inconsistent location)`: i.ndkInconsistentLocation,
+		`(NDK not configured)`:                                        i.ndkNotConfigured,
+		`failed to find target with hash string '(android-.*)'`:       i.target,
+		`failed to find Build Tools revision ([0-9.]*)\s*`:            i.buildTool,
+		`Could not find (com\.android\.support\..*?)\.`:               i.extrasLib,
+	}
+}
 
-		log.Printf("Searching for missing SDK components using:")
-		log.Printf("$ %s", gradleCmd.PrintableCommandArgs())
+func getDependenciesOutput(projectLocation string) (string, error) {
+	gradleCmd := command.New("./gradlew", "dependencies")
+	gradleCmd.SetStdin(strings.NewReader("y"))
+	gradleCmd.SetDir(projectLocation)
+	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
+}
 
-		if out, err := gradleCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-			reader := strings.NewReader(out)
-			scanner := bufio.NewScanner(reader)
-
-			missingSDKComponentFound := false
-
-			for scanner.Scan() {
-				line := scanner.Text()
-				{
-					// NDK not configured
-					targetPattern := `(NDK not configured)`
-					targetRe := regexp.MustCompile(targetPattern)
-					if matches := targetRe.FindStringSubmatch(line); len(matches) == 2 {
-						missingSDKComponentFound = true
-
-						ndkComponent := sdkcomponent.SDKTool{SDKStylePath: "ndk-bundle", LegacySDKStylePath: "ndk-bundle"}
-
-						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
-							if attempt > 0 {
-								log.Warnf("Retrying...")
-							}
-
-							cmd := sdkManager.InstallCommand(ndkComponent)
-							cmd.SetStdin(strings.NewReader("y"))
-
-							log.Printf("Installing NDK bundle using:")
-							log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-							cmdout, err := cmd.RunAndReturnTrimmedCombinedOutput()
-							if err != nil {
-								if attempt > 0 {
-									return fmt.Errorf("output: %s, error: %s", cmdout, err)
-								}
-								return err
-							}
-
-							if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s\noriginal output: %s", cmd.PrintableCommandArgs(), previousOut, cmdout, out)
-							}
-							commandOutputs[cmd.PrintableCommandArgs()] = cmdout
-
-							if err := os.Setenv("ANDROID_NDK_HOME", filepath.Join(os.Getenv("ANDROID_HOME"), "ndk-bundle")); err != nil {
-								return err
-							}
-
-							if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", filepath.Join(os.Getenv("ANDROID_HOME"), "ndk-bundle")); err != nil {
-								return err
-							}
-
-							return nil
-						}); err != nil {
-							return fmt.Errorf("failed to install NDK bundle:\n%s", err)
-						}
-					}
+func (i installer) scanDependencies(foundMatches ...string) error {
+	out, err := getDependenciesOutput(filepath.Dir(i.gradlewPath))
+	if err == nil {
+		return nil
+	}
+	scanner := bufio.NewScanner(strings.NewReader(out))
+	for scanner.Scan() {
+		line := scanner.Text()
+		for pattern, callback := range i.getDependencyCases() {
+			re := regexp.MustCompile(pattern)
+			if matches := re.FindStringSubmatch(line); len(matches) == 2 {
+				if sliceutil.IsStringInSlice(matches[1], foundMatches) {
+					return fmt.Errorf("unable to solve a dependency installation for the output:\n%s", out)
 				}
-				{
-					// failed to find target with hash string 'android-22'
-					targetPattern := `failed to find target with hash string 'android-(?P<version>.*)'\s*`
-					targetRe := regexp.MustCompile(targetPattern)
-					if matches := targetRe.FindStringSubmatch(line); len(matches) == 2 {
-						missingSDKComponentFound = true
-
-						targetVersion := "android-" + matches[1]
-
-						log.Warnf("Missing platform version found: %s", targetVersion)
-
-						platformComponent := sdkcomponent.Platform{
-							Version: targetVersion,
-						}
-
-						cmd := sdkManager.InstallCommand(platformComponent)
-						cmd.SetStdin(strings.NewReader("y"))
-
-						log.Printf("Installing platform version using:")
-						log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
-							if attempt > 0 {
-								log.Warnf("Retrying...")
-							}
-
-							out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-							if err != nil {
-								if attempt > 0 {
-									return fmt.Errorf("output: %s, error: %s", out, err)
-								}
-								return err
-							}
-
-							if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
-							}
-							commandOutputs[cmd.PrintableCommandArgs()] = out
-
-							return nil
-						}); err != nil {
-							return fmt.Errorf("failed to install platform:\n%s", err)
-						}
-					}
+				if err := callback(matches[1]); err != nil {
+					fmt.Println(out)
+					return err
 				}
-
-				{
-					// failed to find Build Tools revision 22.0.1
-					buildToolsPattern := `failed to find Build Tools revision (?P<version>[0-9.]*)\s*`
-					buildToolsRe := regexp.MustCompile(buildToolsPattern)
-					if matches := buildToolsRe.FindStringSubmatch(line); len(matches) == 2 {
-						missingSDKComponentFound = true
-
-						buildToolsVersion := matches[1]
-
-						log.Warnf("Missing build tools version found: %s", buildToolsVersion)
-
-						buildToolsComponent := sdkcomponent.BuildTool{
-							Version: buildToolsVersion,
-						}
-
-						cmd := sdkManager.InstallCommand(buildToolsComponent)
-						cmd.SetStdin(strings.NewReader("y"))
-
-						log.Printf("Installing build tools version using:")
-						log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-						if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
-							if attempt > 0 {
-								log.Warnf("Retrying...")
-							}
-
-							out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-							if err != nil {
-								if attempt > 0 {
-									return fmt.Errorf("output: %s, error: %s", out, err)
-								}
-								return err
-							}
-
-							if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-								return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
-							}
-							commandOutputs[cmd.PrintableCommandArgs()] = out
-
-							return nil
-						}); err != nil {
-							return fmt.Errorf("failed to install build tools:\n%s", err)
-						}
-					}
-				}
-
-				{
-					// Example: "Could not find com.android.support.constraint:constraint-layout:1.0.2."
-					extrasPattern := `Could not find (?P<package>com\.android\.support\..*)\.`
-					extrasRe := regexp.MustCompile(extrasPattern)
-					if matches := extrasRe.FindStringSubmatch(line); len(matches) == 2 {
-						missingSDKComponentFound = true
-
-						log.Warnf("Missing extras library found: %s", matches[1])
-
-						lib := matches[1]
-						firstColon := strings.Index(lib, ":")
-						lib = strings.Replace(lib[:firstColon], ".", ";", -1) + strings.Replace(lib[firstColon:], ":", ";", -1)
-
-						extrasComponents := sdkcomponent.SupportLibraryInstallComponents()
-						extrasComponents = append(extrasComponents, sdkcomponent.Extras{
-							Provider:    "m2repository",
-							PackageName: lib,
-						})
-						for _, e := range extrasComponents {
-							cmd := sdkManager.InstallCommand(e)
-							cmd.SetStdin(strings.NewReader("y"))
-
-							log.Printf("Installing extras using:")
-							log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-							if err := retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
-								if attempt > 0 {
-									log.Warnf("Retrying...")
-								}
-
-								out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-								if err != nil {
-									if attempt > 0 {
-										return fmt.Errorf("output: %s, error: %s", out, err)
-									}
-									return err
-								}
-
-								if previousOut, alreadyRan := commandOutputs[cmd.PrintableCommandArgs()]; alreadyRan {
-									return fmt.Errorf("the command: (%s) already ran with output: %s\ncurrent output: %s", cmd.PrintableCommandArgs(), previousOut, out)
-								}
-								commandOutputs[cmd.PrintableCommandArgs()] = out
-
-								return nil
-							}); err != nil {
-								return fmt.Errorf("failed to install support library dependency:\n%s", err)
-							}
-						}
-					}
-				}
+				return i.scanDependencies(append(foundMatches, matches[1])...)
 			}
-
-			if err := scanner.Err(); err != nil {
-				return fmt.Errorf("failed to analyze gradle output, error: %s", err)
-			}
-
-			if !missingSDKComponentFound {
-				if retryCount < 2 {
-					log.Errorf("Failed to find missing components, retrying...")
-					retryCount++
-					continue
-				}
-				return fmt.Errorf("%s\n%s", out, err)
-			}
-		} else {
-			break
 		}
+	}
+	return nil
+}
+
+func (i installer) ndkNotConfigured(_ string) error {
+	log.Warnf("NDK not configured")
+
+	ndkComponent := sdkcomponent.SDKTool{SDKStylePath: "ndk-bundle", LegacySDKStylePath: "ndk-bundle"}
+	cmd := i.sdkManager.InstallCommand(ndkComponent)
+	cmd.SetStdin(strings.NewReader("y"))
+
+	log.Printf("Install and configure NDK bundle using:")
+	log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		return fmt.Errorf("output: %s, error: %s", out, err)
+	}
+
+	bundlePath := filepath.Join(i.androidSDK.GetAndroidHome(), "ndk-bundle")
+
+	log.Printf("Setting environment variable (%s) to:  %s", "ANDROID_NDK_HOME", bundlePath)
+	if err := os.Setenv("ANDROID_NDK_HOME", bundlePath); err != nil {
+		return err
+	}
+	return tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", bundlePath)
+}
+
+func (i installer) ndkInconsistentLocation(_ string) error {
+	log.Warnf("NDK found on inconsistent path")
+
+	ndkUninstallComponent := sdkcomponent.SDKTool{SDKStylePath: "ndk-bundle", LegacySDKStylePath: "ndk-bundle"}
+	cmd := i.sdkManager.InstallCommand(ndkUninstallComponent)
+	cmd.SetStdin(strings.NewReader("y"))
+	cmd.GetCmd().Args = append([]string{cmd.GetCmd().Args[0], "--uninstall"}, cmd.GetCmd().Args[1:]...)
+
+	log.Printf("Removing NDK bundle using:")
+	log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		return fmt.Errorf("output: %s, error: %s", out, err)
+	}
+	return i.ndkNotConfigured("")
+}
+
+func (i installer) target(version string) error {
+	log.Warnf("Missing platform version found: %s", version)
+
+	platformComponent := sdkcomponent.Platform{
+		Version: version,
+	}
+	cmd := i.sdkManager.InstallCommand(platformComponent)
+	cmd.SetStdin(strings.NewReader("y"))
+
+	log.Printf("Installing platform version using:")
+	log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return fmt.Errorf("output: %s, error: %s", out, err)
+	}
+	return nil
+}
+
+func (i installer) buildTool(buildToolsVersion string) error {
+	log.Warnf("Missing build tools version found: %s", buildToolsVersion)
+
+	buildToolsComponent := sdkcomponent.BuildTool{
+		Version: buildToolsVersion,
+	}
+
+	cmd := i.sdkManager.InstallCommand(buildToolsComponent)
+	cmd.SetStdin(strings.NewReader("y"))
+
+	log.Printf("Installing build tools version using:")
+	log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return fmt.Errorf("output: %s, error: %s", out, err)
+	}
+	return nil
+}
+
+func (i installer) extrasLib(lib string) error {
+	log.Warnf("Missing extras library found: %s", lib)
+
+	firstColon := strings.Index(lib, ":")
+	lib = strings.Replace(lib[:firstColon], ".", ";", -1) + strings.Replace(lib[firstColon:], ":", ";", -1)
+
+	extrasComponents := sdkcomponent.SupportLibraryInstallComponents()
+	extrasComponents = append(extrasComponents, sdkcomponent.Extras{
+		Provider:    "m2repository",
+		PackageName: lib,
+	})
+	for _, e := range extrasComponents {
+		cmd := i.sdkManager.InstallCommand(e)
+		cmd.SetStdin(strings.NewReader("y"))
+
+		log.Printf("Installing extras using:")
+		log.Printf("$ %s", cmd.PrintableCommandArgs())
+
+		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+		if err != nil {
+			return fmt.Errorf("output: %s, error: %s", out, err)
+		}
+		return nil
 	}
 	return nil
 }
