@@ -107,9 +107,9 @@ func (i installer) getDependencyCases() map[string]func(match string) error {
 	return map[string]func(match string) error{
 		`(Observed package id 'ndk-bundle' in inconsistent location)`: i.ndkInconsistentLocation,
 		`(NDK not configured)`:                                        i.ndkNotConfigured,
-		`failed to find target with hash string '(android-.*)'`:       i.target,
+		`failed to find target with hash string 'android-(.*)'\s*`:    i.target,
 		`failed to find Build Tools revision ([0-9.]*)\s*`:            i.buildTool,
-		`Could not find (com\.android\.support\..*?)\.`:               i.extrasLib,
+		`Could not find (com\.android\.support\..*)\.`:                i.extrasLib,
 	}
 }
 
@@ -188,6 +188,7 @@ func (i installer) ndkInconsistentLocation(_ string) error {
 func (i installer) target(version string) error {
 	log.Warnf("Missing platform version found: %s", version)
 
+	version = "android-" + version
 	platformComponent := sdkcomponent.Platform{
 		Version: version,
 	}
