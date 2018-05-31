@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
 
 	"github.com/bitrise-tools/go-android/sdk"
@@ -100,7 +102,13 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 		sdkManager,
 		gradlewPath,
 	}
-	return i.scanDependencies()
+
+	return retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+		if attempt > 0 {
+			log.Warnf("Retrying...")
+		}
+		return i.scanDependencies()
+	})
 }
 
 func (i installer) getDependencyCases() map[string]func(match string) error {
