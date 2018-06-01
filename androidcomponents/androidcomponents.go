@@ -133,6 +133,7 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 	if err == nil {
 		return nil
 	}
+	err = fmt.Errorf("output: %s\nerror: %s", out, err)
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -142,15 +143,16 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 				if sliceutil.IsStringInSlice(matches[1], foundMatches) {
 					return fmt.Errorf("unable to solve a dependency installation for the output:\n%s", out)
 				}
-				if err := callback(matches[1]); err != nil {
-					fmt.Println(out)
-					return err
+				if callbackErr := callback(matches[1]); callbackErr != nil {
+					log.Printf(out)
+					return callbackErr
 				}
+				err = nil
 				return i.scanDependencies(append(foundMatches, matches[1])...)
 			}
 		}
 	}
-	return nil
+	return err
 }
 
 func (i installer) ndkNotConfigured(_ string) error {
@@ -169,7 +171,7 @@ func (i installer) ndkNotConfigured(_ string) error {
 
 	bundlePath := filepath.Join(i.androidSDK.GetAndroidHome(), "ndk-bundle")
 
-	log.Printf("Setting environment variable (%s) to:  %s", "ANDROID_NDK_HOME", bundlePath)
+	log.Printf("Setting environment variable (ANDROID_NDK_HOME) to:  %s", bundlePath)
 	if err := os.Setenv("ANDROID_NDK_HOME", bundlePath); err != nil {
 		return err
 	}
