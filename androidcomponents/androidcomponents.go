@@ -152,6 +152,10 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 			}
 		}
 	}
+	if scanner.Err() != nil {
+		log.Printf(out)
+		return scanner.Err()
+	}
 	return err
 }
 
