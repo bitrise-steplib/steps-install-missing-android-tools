@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -65,30 +63,8 @@ func failf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func unzip(content io.ReadCloser, outputDir string) error {
-	cmd := command.New("tar", "--strip", "1", "-x", "-v", "-f", "-").
-		SetStdin(content).
-		SetDir(outputDir)
-
-	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-	return errors.Wrap(err, out)
-}
-
 func ndkDownloadURL(revision string) string {
 	return fmt.Sprintf("https://dl.google.com/android/repository/android-ndk-r%s-%s-x86_64.zip", revision, runtime.GOOS)
-}
-
-func downloadRequest(url string) (*http.Response, error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to get download request: non-successful status code")
-	}
-
-	return response, nil
 }
 
 func installedNDKVersion(ndkHome string) string {
@@ -154,12 +130,7 @@ func updateNDK(revision string) error {
 
 	log.Printf("Downloading")
 
-	req, err := downloadRequest(ndkURL)
-	if err != nil {
-		return err
-	}
-
-	if err := unzip(req.Body, ndkHome); err != nil {
+	if err := command.DownloadAndUnZIP(ndkURL, ndkHome); err != nil {
 		return err
 	}
 
