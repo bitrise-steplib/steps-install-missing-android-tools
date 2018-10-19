@@ -149,6 +149,57 @@ workflows:
     - path::./:
         title: Step test
 
+  test_ndk_install:
+    envs:
+    - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-sdk21-tools-21.0.1.git
+    - BRANCH: master
+    - GRADLE_BUILD_FILE_PATH: build.gradle
+    - GRADLEW_PATH: ./gradlew
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            rm -rf ./_tmp
+    - change-workdir:
+        title: Switch working dir to test / _tmp dir
+        run_if: true
+        inputs:
+        - path: ./_tmp
+        - is_create_path: true
+    - script:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            if [[ -z "${SAMPLE_APP_URL}" ]]; then
+              echo "error: there is no SAMPLE_APP_URL env var specified"
+              exit 1
+            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
+              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
+              exit 1
+            fi
+            git init
+            git remote add origin "${SAMPLE_APP_URL}"
+            git fetch || exit 1
+            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+    - path::./:
+        title: Not using NDK
+        inputs:
+        - ndk_revision: ""
+    - path::./:
+        title: Installing NDK r18
+        inputs:
+        - ndk_revision: "18"
+    - path::./: 
+        title: Already installed revision case
+        inputs:
+        - ndk_revision: "18"
+    - path::./: 
+        title: Another version case
+        inputs:
+        - ndk_revision: "17"
+
   test_android-sdk21-tools-21.0.1:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-sdk21-tools-21.0.1.git
