@@ -59,6 +59,7 @@ workflows:
     - test_android-sdk20
     - test_android-sdk22-subdir
     - test_react_native
+    - test_ndk_install
 
   test_ndk:
     envs:
