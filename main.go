@@ -186,8 +186,8 @@ func main() {
 		log.Infof("Clearing NDK environment")
 		log.Printf("Unset ANDROID_NDK_HOME")
 
-		if err := os.Setenv("ANDROID_NDK_HOME", ""); err != nil {
-			failf("Failed to set environment variable, error: %s", err)
+		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
+			failf("Failed to unset environment variable, error: %s", err)
 		}
 
 		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ""); err != nil {
