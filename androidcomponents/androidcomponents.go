@@ -123,7 +123,7 @@ func (i installer) getDependencyCases() map[string]func(match string) error {
 }
 
 func getDependenciesOutput(projectLocation string) (string, error) {
-	gradleCmd := command.New("./gradlew", "dependencies")
+	gradleCmd := command.New("./gradlew", "dependencies", "--stacktrace")
 	gradleCmd.SetStdin(strings.NewReader("y"))
 	gradleCmd.SetDir(projectLocation)
 	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
