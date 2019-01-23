@@ -6,7 +6,7 @@ app:
   - STEP_VERSION: "2.2.0"
 
   # define these in your .bitrise.secrets.yml
-  - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-sdk21-tools-21.0.1.git
+  - SAMPLE_APP_URL: https://github.com/bitrise-samples/sample-apps-android-sdk22.git
   - BRANCH: master
 
 workflows:
