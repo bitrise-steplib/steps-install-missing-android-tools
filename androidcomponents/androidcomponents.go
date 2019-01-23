@@ -63,7 +63,7 @@ func InstallLicences(androidSdk *sdk.Model) error {
 	}
 
 	licenceMap := map[string]string{
-		"android-sdk-license":           "8933bad161af4178b1185d1a37fbf41ea5269c55\n\nd56f5187479451eabf01fb78af6dfcb131a6481e",
+		"android-sdk-license":           "\n8933bad161af4178b1185d1a37fbf41ea5269c55\n\nd56f5187479451eabf01fb78af6dfcb131a6481e\n\n24333f8a63b6825ea9c5514f83c2829b004d1fee",
 		"android-googletv-license":      "\n601085b94cd77f0b54ff86406957099ebe79c4d6",
 		"android-sdk-preview-license":   "\n84831b9409646a918e30573bab4c9c91346d8abd",
 		"intel-android-extra-license":   "\nd975f751698a77b662f1254ddbeed3901e976f5a",
