@@ -50,6 +50,15 @@ func InstallLicences(androidSdk *sdk.Model) error {
 		return err
 	}
 
+	licencesDir, licenceMap := filepath.Join(androidSdk.GetAndroidHome(), "licenses"), map[string]string{
+		"android-sdk-license":           "\n24333f8a63b6825ea9c5514f83c2829b004d1fee",
+		"android-googletv-license":      "\n601085b94cd77f0b54ff86406957099ebe79c4d6",
+		"android-sdk-preview-license":   "\n84831b9409646a918e30573bab4c9c91346d8abd",
+		"intel-android-extra-license":   "\nd975f751698a77b662f1254ddbeed3901e976f5a",
+		"google-gdk-license":            "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a",
+		"mips-android-sysimage-license": "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d",
+	}
+
 	if !sdkManager.IsLegacySDK() {
 		licensesCmd := command.New(filepath.Join(androidSdk.GetAndroidHome(), "tools/bin/sdkmanager"), "--licenses")
 		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
@@ -58,20 +67,16 @@ func InstallLicences(androidSdk *sdk.Model) error {
 			log.Printf("Continue using legacy license installation...")
 			log.Printf("")
 		} else {
+			sdkLicencePath, oldLicenceHash := filepath.Join(licencesDir, "android-sdk-license"), "d56f5187479451eabf01fb78af6dfcb131a6481e"
+			if content, err := fileutil.ReadStringFromFile(sdkLicencePath); err == nil && strings.Contains(content, oldLicenceHash) {
+				if err := fileutil.WriteStringToFile(sdkLicencePath, licenceMap[filepath.Base(sdkLicencePath)]); err != nil {
+					return err
+				}
+			}
 			return nil
 		}
 	}
 
-	licenceMap := map[string]string{
-		"android-sdk-license":           "8933bad161af4178b1185d1a37fbf41ea5269c55\n\nd56f5187479451eabf01fb78af6dfcb131a6481e",
-		"android-googletv-license":      "\n601085b94cd77f0b54ff86406957099ebe79c4d6",
-		"android-sdk-preview-license":   "\n84831b9409646a918e30573bab4c9c91346d8abd",
-		"intel-android-extra-license":   "\nd975f751698a77b662f1254ddbeed3901e976f5a",
-		"google-gdk-license":            "\n33b6a2b64607f11b759f320ef9dff4ae5c47d97a",
-		"mips-android-sysimage-license": "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d",
-	}
-
-	licencesDir := filepath.Join(androidSdk.GetAndroidHome(), "licenses")
 	if exist, err := pathutil.IsDirExists(licencesDir); err != nil {
 		return err
 	} else if !exist {
@@ -82,7 +87,6 @@ func InstallLicences(androidSdk *sdk.Model) error {
 
 	for name, content := range licenceMap {
 		pth := filepath.Join(licencesDir, name)
-
 		if err := fileutil.WriteStringToFile(pth, content); err != nil {
 			return err
 		}
