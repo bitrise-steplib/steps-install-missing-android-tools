@@ -12,7 +12,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
-	"github.com/pkg/errors"
 
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
@@ -51,18 +50,22 @@ func InstallLicences(androidSdk *sdk.Model) error {
 		return err
 	}
 
-	fmt.Printf("sdkManager.IsLegacySDK(): %t\n", sdkManager.IsLegacySDK())
+	licencesDir := filepath.Join(androidSdk.GetAndroidHome(), "licenses")
 
 	if !sdkManager.IsLegacySDK() {
 		licensesCmd := command.New(filepath.Join(androidSdk.GetAndroidHome(), "tools/bin/sdkmanager"), "--licenses")
 		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
-		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-			fmt.Printf("err: %s\n", errors.Wrap(err, out))
+		if err := licensesCmd.Run(); err != nil {
 			log.Warnf("Failed to install licenses using $(sdkmanager --licenses) command")
 			log.Printf("Continue using legacy license installation...")
 			log.Printf("")
 		} else {
-			fmt.Printf("EXITs\n")
+			sdkLicencePath, oldLicenceHash, newLicenceHash := filepath.Join(licencesDir, "android-sdk-license"), "d56f5187479451eabf01fb78af6dfcb131a6481e", "24333f8a63b6825ea9c5514f83c2829b004d1fee"
+			if content, err := fileutil.ReadStringFromFile(sdkLicencePath); err == nil && strings.Contains(content, oldLicenceHash) {
+				if err := fileutil.WriteStringToFile(sdkLicencePath, "\n"+newLicenceHash); err != nil {
+					return err
+				}
+			}
 			return nil
 		}
 	}
@@ -76,7 +79,6 @@ func InstallLicences(androidSdk *sdk.Model) error {
 		"mips-android-sysimage-license": "\ne9acab5b5fbb560a72cfaecce8946896ff6aab9d",
 	}
 
-	licencesDir := filepath.Join(androidSdk.GetAndroidHome(), "licenses")
 	if exist, err := pathutil.IsDirExists(licencesDir); err != nil {
 		return err
 	} else if !exist {
@@ -87,7 +89,6 @@ func InstallLicences(androidSdk *sdk.Model) error {
 
 	for name, content := range licenceMap {
 		pth := filepath.Join(licencesDir, name)
-
 		if err := fileutil.WriteStringToFile(pth, content); err != nil {
 			return err
 		}
