@@ -12,6 +12,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/pkg/errors"
 
 	"github.com/bitrise-tools/go-android/sdk"
 	"github.com/bitrise-tools/go-android/sdkcomponent"
@@ -50,14 +51,18 @@ func InstallLicences(androidSdk *sdk.Model) error {
 		return err
 	}
 
+	fmt.Printf("sdkManager.IsLegacySDK(): %t\n", sdkManager.IsLegacySDK())
+
 	if !sdkManager.IsLegacySDK() {
 		licensesCmd := command.New(filepath.Join(androidSdk.GetAndroidHome(), "tools/bin/sdkmanager"), "--licenses")
 		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
-		if err := licensesCmd.Run(); err != nil {
+		if out, err := licensesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+			fmt.Printf("err: %s\n", errors.Wrap(err, out))
 			log.Warnf("Failed to install licenses using $(sdkmanager --licenses) command")
 			log.Printf("Continue using legacy license installation...")
 			log.Printf("")
 		} else {
+			fmt.Printf("EXITs\n")
 			return nil
 		}
 	}
@@ -86,6 +91,7 @@ func InstallLicences(androidSdk *sdk.Model) error {
 		if err := fileutil.WriteStringToFile(pth, content); err != nil {
 			return err
 		}
+		fmt.Printf("write: %s - %s\n", pth, content)
 	}
 
 	return nil
