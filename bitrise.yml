@@ -45,8 +45,7 @@ workflows:
             git fetch || exit 1
             [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
     - path::./:
-       title: Step test
-
+        title: Step test
 
   ci:
     steps:
