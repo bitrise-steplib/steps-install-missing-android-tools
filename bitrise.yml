@@ -79,7 +79,7 @@ workflows:
             echo ""
 
             ls -alh /opt/android-sdk-linux/licenses
-            cat /opt/android-sdk-linux/licenses/android-sdk-license
+            cp /opt/android-sdk-linux/licenses/android-sdk-license $BITRISE_DEPLOY_DIR/android-sdk-license
         is_always_run: true
 
 
