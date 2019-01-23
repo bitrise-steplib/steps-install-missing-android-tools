@@ -44,43 +44,43 @@ workflows:
             git remote add origin "${SAMPLE_APP_URL}"
             git fetch || exit 1
             [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
-    - script@1.1.5:
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            # fail if any commands fails
-            set -e
-            # debug log
-            set -x
+    # - script@1.1.5:
+    #     inputs:
+    #     - content: |-
+    #         #!/usr/bin/env bash
+    #         # fail if any commands fails
+    #         set -e
+    #         # debug log
+    #         set -x
 
-            ls -alh /opt/android-sdk-linux/licenses
-            cat /opt/android-sdk-linux/licenses/android-sdk-license
-        is_always_run: true
-    #- path::./:
-    #    title: Step test
-    - script@1.1.5:
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            # fail if any commands fails
-            set -e
-            # debug log
-            set -x
+    #         ls -alh /opt/android-sdk-linux/licenses
+    #         cat /opt/android-sdk-linux/licenses/android-sdk-license
+    #     is_always_run: true
+    - path::./:
+       title: Step test
+    # - script@1.1.5:
+    #     inputs:
+    #     - content: |-
+    #         #!/usr/bin/env bash
+    #         # fail if any commands fails
+    #         set -e
+    #         # debug log
+    #         set -x
 
-            rm -rf /opt/android-sdk-linux/licenses
-            # cat /opt/android-sdk-linux/licenses/android-sdk-license
+    #         rm -rf /opt/android-sdk-linux/licenses
+    #         # cat /opt/android-sdk-linux/licenses/android-sdk-license
 
-            #echo ""
-            #echo ""
+    #         #echo ""
+    #         #echo ""
 
-            yes | sdkmanager --install "build-tools;28.0.3"
+    #         yes | sdkmanager --install "build-tools;28.0.3"
 
-            echo ""
-            echo ""
+    #         echo ""
+    #         echo ""
 
-            ls -alh /opt/android-sdk-linux/licenses
-            cp /opt/android-sdk-linux/licenses/android-sdk-license $BITRISE_DEPLOY_DIR/android-sdk-license
-        is_always_run: true
+    #         ls -alh /opt/android-sdk-linux/licenses
+    #         cp /opt/android-sdk-linux/licenses/android-sdk-license $BITRISE_DEPLOY_DIR/android-sdk-license
+    #     is_always_run: true
 
 
   ci:
