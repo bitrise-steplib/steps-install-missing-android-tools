@@ -56,8 +56,8 @@ workflows:
             ls -alh /opt/android-sdk-linux/licenses
             cat /opt/android-sdk-linux/licenses/android-sdk-license
         is_always_run: true
-    - path::./:
-        title: Step test
+    #- path::./:
+    #    title: Step test
     - script@1.1.5:
         inputs:
         - content: |-
@@ -67,11 +67,11 @@ workflows:
             # debug log
             set -x
 
-            ls -alh /opt/android-sdk-linux/licenses
-            cat /opt/android-sdk-linux/licenses/android-sdk-license
+            rm -rf /opt/android-sdk-linux/licenses
+            # cat /opt/android-sdk-linux/licenses/android-sdk-license
 
-            echo ""
-            echo ""
+            #echo ""
+            #echo ""
 
             yes | sdkmanager --install "build-tools;28.0.3"
 
