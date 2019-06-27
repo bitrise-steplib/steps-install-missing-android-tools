@@ -10,7 +10,7 @@ import (
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
 	"github.com/bitrise-tools/go-steputils/input"
 	"github.com/bitrise-tools/go-steputils/tools"
-	version "github.com/hashicorp/go-version"
+	"github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 
 	"github.com/bitrise-io/go-utils/command"
@@ -134,6 +134,10 @@ func updateNDK(revision string) error {
 		return err
 	}
 
+	if err := unWrapNDKDirIfNeeded(ndkHome, revision); err != nil {
+		return err
+	}
+
 	if !inPath(ndkHome) {
 		log.Printf("Append to $PATH")
 		if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), ndkHome)); err != nil {
@@ -148,6 +152,46 @@ func updateNDK(revision string) error {
 		}
 	}
 
+	return nil
+}
+
+func unWrapNDKDirIfNeeded(ndkHome string, revision string) error {
+	platformDirName := "platforms"
+	platformDir := filepath.Join(ndkHome, platformDirName)
+	p, err := pathutil.IsDirExists(platformDir)
+	if err != nil {
+		return fmt.Errorf("could not check if directory %s exists. Error: %v", platformDir, err)
+	}
+	if p {
+		return nil
+	}
+	revDirName := fmt.Sprintf("android-ndk-r%s", revision)
+	revDir := filepath.Join(ndkHome, revDirName)
+	r, err := pathutil.IsDirExists(revDir)
+	if err != nil {
+		return fmt.Errorf("could not check if directory %s exists. Error: %v", revDir, err)
+	}
+	if !r {
+		return fmt.Errorf("directory %s not exists", revDir)
+	}
+	revPlatformDir := filepath.Join(revDir, platformDirName)
+	rp, err := pathutil.IsDirExists(revPlatformDir)
+	if err != nil {
+		return fmt.Errorf("could not check if directory %s exists. Error: %v", revDir, err)
+	}
+	if rp {
+		return unWrapNDKDir(revDir, ndkHome)
+	}
+	return fmt.Errorf("could not locate platform dir at ndk home: %s", ndkHome)
+}
+
+func unWrapNDKDir(src string, dst string) error {
+	if err := command.CopyDir(src, dst, true); err != nil {
+		return err
+	}
+	if err := command.RemoveDir(src); err != nil {
+		return err
+	}
 	return nil
 }
 
