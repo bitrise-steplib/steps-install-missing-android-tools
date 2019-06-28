@@ -154,7 +154,7 @@ workflows:
 
   test_ndk_install:
     envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-sdk21-tools-21.0.1.git
+    - SAMPLE_APP_URL: https://github.com/bitrise-samples/android-ndk-sample-project.git
     - BRANCH: master
     - GRADLE_BUILD_FILE_PATH: build.gradle
     - GRADLEW_PATH: ./gradlew
