@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -19,6 +20,9 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-tools/go-android/sdk"
 )
+
+const platformDirName = "platforms"
+const androidNDKHome = "ANDROID_NDK_HOME"
 
 // ConfigsModel ...
 type ConfigsModel struct {
@@ -92,7 +96,7 @@ func installedNDKVersion(ndkHome string) string {
 }
 
 func ndkHome() string {
-	if v := os.Getenv("ANDROID_NDK_HOME"); v != "" {
+	if v := os.Getenv(androidNDKHome); v != "" {
 		return v
 	}
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
@@ -134,7 +138,7 @@ func updateNDK(revision string) error {
 		return err
 	}
 
-	if err := unWrapNDKDirIfNeeded(ndkHome, revision); err != nil {
+	if err := updateNDKPathIfNeeded(ndkHome); err != nil {
 		return err
 	}
 
@@ -145,9 +149,9 @@ func updateNDK(revision string) error {
 		}
 	}
 
-	if os.Getenv("ANDROID_NDK_HOME") == "" {
-		log.Printf("Export ANDROID_NDK_HOME: %s", ndkHome)
-		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ndkHome); err != nil {
+	if os.Getenv(androidNDKHome) == "" {
+		log.Printf("Export %s: %s", androidNDKHome, ndkHome)
+		if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, ndkHome); err != nil {
 			return err
 		}
 	}
@@ -155,43 +159,41 @@ func updateNDK(revision string) error {
 	return nil
 }
 
-func unWrapNDKDirIfNeeded(ndkHome string, revision string) error {
-	platformDirName := "platforms"
-	platformDir := filepath.Join(ndkHome, platformDirName)
-	p, err := pathutil.IsDirExists(platformDir)
-	if err != nil {
-		return fmt.Errorf("could not check if directory %s exists. Error: %v", platformDir, err)
-	}
-	if p {
+func updateNDKPathIfNeeded(ndkHome string) error {
+	log.Printf("searching for platforms dir in %s", ndkHome)
+	var foundPDPath string
+	if err := filepath.Walk(ndkHome, func(currentPath string, info os.FileInfo, e error) error {
+		if e != nil {
+			return e
+		}
+
+		if info.IsDir() && info.Name() == platformDirName {
+			foundPDPath = path.Dir(currentPath)
+			log.Printf("found platforms dir at %s", foundPDPath)
+			if foundPDPath != ndkHome {
+				return updateNDKPath(foundPDPath)
+			}
+			log.Printf("%s is a valid NDK dir, no need to update", foundPDPath)
+			return nil
+		}
 		return nil
+	}); err != nil {
+		return err
 	}
-	revDirName := fmt.Sprintf("android-ndk-r%s", revision)
-	revDir := filepath.Join(ndkHome, revDirName)
-	r, err := pathutil.IsDirExists(revDir)
-	if err != nil {
-		return fmt.Errorf("could not check if directory %s exists. Error: %v", revDir, err)
+	if foundPDPath == "" {
+		return fmt.Errorf("could not locate platform dir at ndk home: %s", ndkHome)
 	}
-	if !r {
-		return fmt.Errorf("directory %s not exists", revDir)
-	}
-	revPlatformDir := filepath.Join(revDir, platformDirName)
-	rp, err := pathutil.IsDirExists(revPlatformDir)
-	if err != nil {
-		return fmt.Errorf("could not check if directory %s exists. Error: %v", revDir, err)
-	}
-	if rp {
-		return unWrapNDKDir(revDir, ndkHome)
-	}
-	return fmt.Errorf("could not locate platform dir at ndk home: %s", ndkHome)
+	return nil
 }
 
-func unWrapNDKDir(src string, dst string) error {
-	if err := command.CopyDir(src, dst, true); err != nil {
-		return err
+func updateNDKPath(path string) error {
+	if err := os.Setenv(androidNDKHome, path); err != nil {
+		return fmt.Errorf("failed to add path key %s with value %s", androidNDKHome, path)
 	}
-	if err := command.RemoveDir(src); err != nil {
-		return err
+	if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, path); err != nil {
+		return fmt.Errorf("failed to export with envman key %s value %s", androidNDKHome, path)
 	}
+	log.Printf("updated NDK HOME path to %s", path)
 	return nil
 }
 
