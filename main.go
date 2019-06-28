@@ -162,9 +162,9 @@ func updateNDK(revision string) error {
 func updateNDKPathIfNeeded(ndkHome string) error {
 	log.Printf("searching for platforms dir in %s", ndkHome)
 	var foundPDPath string
-	if err := filepath.Walk(ndkHome, func(currentPath string, info os.FileInfo, e error) error {
-		if e != nil {
-			return e
+	if err := filepath.Walk(ndkHome, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
 
 		if info.IsDir() && info.Name() == platformDirName {
