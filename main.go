@@ -138,7 +138,7 @@ func updateNDK(revision string) error {
 		return err
 	}
 
-	if err := updateNDKPathIfNeeded(ndkHome); err != nil {
+	if err := ensureNDKPath(ndkHome); err != nil {
 		return err
 	}
 
@@ -159,7 +159,7 @@ func updateNDK(revision string) error {
 	return nil
 }
 
-func updateNDKPathIfNeeded(ndkHome string) error {
+func ensureNDKPath(ndkHome string) error {
 	log.Printf("searching for platforms dir in %s", ndkHome)
 	var foundPDPath string
 	if err := filepath.Walk(ndkHome, func(currentPath string, info os.FileInfo, err error) error {
