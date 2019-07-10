@@ -16,7 +16,7 @@ type Task struct {
 
 // GetVariants ...
 func (task *Task) GetVariants() (Variants, error) {
-	tasksOutput, err := getGradleOutput(task.project.location, "tasks", "--all")
+	tasksOutput, err := getGradleOutput(task.project.location, "tasks", "--all", "--console=plain", "--quiet")
 	if err != nil {
 		return nil, fmt.Errorf("%s, %s", tasksOutput, err)
 	}
