@@ -49,3 +49,11 @@ inputs:
       title: NDK Revision
       summary: "The step will install the given revision of the Android NDK.(eg.: 18) Leave this input empty if you are not using NDK in your project."
       description: "The step will install the given revision of the Android NDK.(eg.: 18) Leave this input empty if you are not using NDK in your project."
+  - verbose_mode: "no"
+    opts:
+      title: Verbose Mode
+      summary: "The step will print more logs."
+      description: "The step will print more logs."
+      value_options:
+      - "yes"
+      - "no"
