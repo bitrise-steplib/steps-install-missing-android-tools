@@ -3,7 +3,10 @@ summary: Install Android SDK components that are required for the app.
 
 description: |-
 
-  This Step makes sure that required Android SDK components (platforms and build-tools) are installed. To do so, the Step runs the `gradlew dependencies` command. If the Android Plugin for Gradle version is 2.2.0 or higher, the plugin will download and install the missing components during the Gradle command. Otherwise the command fails and the Step parses the command's output to determine which SDK components are missing and installs them.
+  This Step makes sure that required Android SDK components (platforms and build-tools) are installed. To do so, the Step runs the `gradlew dependencies` command. 
+  
+  If the Android Plugin for Gradle version is 2.2.0 or higher, the plugin will download and install the missing components during the Gradle command.  
+  Otherwise the command fails and the Step parses the command's output to determine which SDK components are missing and installs them.
 
   ### Configuring the Step
 
