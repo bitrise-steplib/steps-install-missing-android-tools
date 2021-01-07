@@ -106,8 +106,12 @@ workflows:
             rm -rf $ANDROID_HOME/ndk-bundle
     - path::./:
         title: Step test installing ndk
+        inputs:
+        - ndk_revision: "21"
     - path::./:
         title: Step test installed ndk
+        inputs:
+        - ndk_revision: "21"
 
   test_react_native:
     envs:
