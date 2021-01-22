@@ -27,21 +27,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - path::./:
         title: Step test
 
@@ -66,7 +56,7 @@ workflows:
   test_ndk:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/android-ndk-sample-project.git
-    - BRANCH: master
+    - BRANCH: ndk22-compatible
     - GRADLE_BUILD_FILE_PATH: ./build.gradle
     - GRADLEW_PATH: ./gradlew
     - ANDROID_NDK_HOME: ""
@@ -83,21 +73,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - script:
         inputs:
         - content: |-
@@ -128,21 +108,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - script:
         inputs:
         - content: |-
@@ -155,7 +125,7 @@ workflows:
   test_ndk_install:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/android-ndk-sample-project.git
-    - BRANCH: master
+    - BRANCH: ndk22-compatible
     - GRADLE_BUILD_FILE_PATH: build.gradle
     - GRADLEW_PATH: ./gradlew
     steps:
@@ -171,21 +141,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - path::./:
         title: Not using NDK
         inputs:
@@ -222,21 +182,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - path::./:
         title: Step test
 
@@ -264,21 +214,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - path::./:
         title: Step test
 
@@ -301,21 +241,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - path::./:
         title: Step test
 
@@ -338,21 +268,11 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
-    - script:
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
         inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            if [[ -z "${SAMPLE_APP_URL}" ]]; then
-              echo "error: there is no SAMPLE_APP_URL env var specified"
-              exit 1
-            elif [[ -z "${COMMIT}" && -z "${BRANCH}" ]]; then
-              echo "error: can't checkout: there is no BRANCH or COMMIT env var specified"
-              exit 1
-            fi
-            git init
-            git remote add origin "${SAMPLE_APP_URL}"
-            git fetch || exit 1
-            [[ -n "${COMMIT}" ]] && git checkout "${COMMIT}" || git checkout "${BRANCH}"
+        - repository_url: $SAMPLE_APP_URL
+        - clone_into_dir: .
+        - branch: $BRANCH
     - path::./:
         title: Step test
 
