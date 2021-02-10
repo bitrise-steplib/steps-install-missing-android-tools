@@ -162,6 +162,31 @@ workflows:
         title: Another version case
         inputs:
         - ndk_revision: "17"
+    
+  test_ndk_install2:
+    envs:
+    - GRADLEW_PATH: ./gradlew
+    steps:  
+    - script:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -e
+            rm -rf ./_tmp
+    - change-workdir:
+        title: Switch working dir to test / _tmp dir
+        inputs:
+        - path: ./_tmp
+        - is_create_path: true
+    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git:
+        inputs:
+        - repository_url:  https://github.com/bitrise-io/sample-apps-android-abi-split.git
+        - clone_into_dir: .
+        - branch: master
+    - path::./: 
+        title: Another version case
+        inputs:
+        - ndk_revision: "16"
 
   test_android-sdk21-tools-21.0.1:
     envs:
