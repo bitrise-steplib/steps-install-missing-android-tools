@@ -1,0 +1,27 @@
+# github.com/bitrise-io/go-utils v0.0.0-20180516145954-d1de0dbcb811
+## explicit
+github.com/bitrise-io/go-utils/colorstring
+github.com/bitrise-io/go-utils/command
+github.com/bitrise-io/go-utils/errorutil
+github.com/bitrise-io/go-utils/fileutil
+github.com/bitrise-io/go-utils/log
+github.com/bitrise-io/go-utils/pathutil
+github.com/bitrise-io/go-utils/retry
+github.com/bitrise-io/go-utils/sliceutil
+# github.com/bitrise-tools/go-android v0.0.0-20180629120427-cad5a20e271b
+## explicit
+github.com/bitrise-tools/go-android/sdk
+github.com/bitrise-tools/go-android/sdkcomponent
+github.com/bitrise-tools/go-android/sdkmanager
+# github.com/bitrise-tools/go-steputils v0.0.0-20180322152030-d4d9e08cc434
+## explicit
+github.com/bitrise-tools/go-steputils/input
+github.com/bitrise-tools/go-steputils/tools
+# github.com/hashicorp/go-version v1.0.0
+## explicit
+github.com/hashicorp/go-version
+# github.com/pkg/errors v0.8.0
+## explicit
+github.com/pkg/errors
+# github.com/stretchr/testify v1.7.0
+## explicit
