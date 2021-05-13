@@ -1,27 +1,30 @@
-# github.com/bitrise-io/go-utils v0.0.0-20180516145954-d1de0dbcb811
+# github.com/bitrise-io/go-android v0.0.0-20210301151701-791fb4b5216b
+## explicit
+github.com/bitrise-io/go-android/sdk
+github.com/bitrise-io/go-android/sdkcomponent
+github.com/bitrise-io/go-android/sdkmanager
+# github.com/bitrise-io/go-steputils v0.0.0-20210507072936-92fde382fb33
+## explicit
+github.com/bitrise-io/go-steputils/input
+github.com/bitrise-io/go-steputils/tools
+# github.com/bitrise-io/go-utils v0.0.0-20210507100250-37de47dfa6ce
 ## explicit
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
-github.com/bitrise-io/go-utils/errorutil
 github.com/bitrise-io/go-utils/fileutil
 github.com/bitrise-io/go-utils/log
 github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-tools/go-android v0.0.0-20180629120427-cad5a20e271b
+# github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit
-github.com/bitrise-tools/go-android/sdk
-github.com/bitrise-tools/go-android/sdkcomponent
-github.com/bitrise-tools/go-android/sdkmanager
-# github.com/bitrise-tools/go-steputils v0.0.0-20180322152030-d4d9e08cc434
+github.com/hashicorp/go-cleanhttp
+# github.com/hashicorp/go-retryablehttp v0.7.0
 ## explicit
-github.com/bitrise-tools/go-steputils/input
-github.com/bitrise-tools/go-steputils/tools
-# github.com/hashicorp/go-version v1.0.0
+github.com/hashicorp/go-retryablehttp
+# github.com/hashicorp/go-version v1.3.0
 ## explicit
 github.com/hashicorp/go-version
-# github.com/pkg/errors v0.8.0
+# github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/stretchr/testify v1.7.0
-## explicit
