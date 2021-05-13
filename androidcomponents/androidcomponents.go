@@ -10,18 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-io/go-utils/sliceutil"
-
-	"github.com/bitrise-tools/go-android/sdk"
-	"github.com/bitrise-tools/go-android/sdkcomponent"
-	"github.com/bitrise-tools/go-android/sdkmanager"
-	"github.com/bitrise-tools/go-steputils/tools"
-
+	"github.com/bitrise-io/go-android/sdk"
+	"github.com/bitrise-io/go-android/sdkcomponent"
+	"github.com/bitrise-io/go-android/sdkmanager"
+	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	_log "github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/sliceutil"
 )
 
 type logger interface {

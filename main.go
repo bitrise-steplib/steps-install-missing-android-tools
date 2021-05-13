@@ -8,17 +8,16 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
-	"github.com/bitrise-tools/go-steputils/input"
-	"github.com/bitrise-tools/go-steputils/tools"
-	"github.com/hashicorp/go-version"
-	"github.com/pkg/errors"
-
+	"github.com/bitrise-io/go-android/sdk"
+	"github.com/bitrise-io/go-steputils/input"
+	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-tools/go-android/sdk"
+	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
+	"github.com/hashicorp/go-version"
+	"github.com/pkg/errors"
 )
 
 const platformDirName = "platforms"
