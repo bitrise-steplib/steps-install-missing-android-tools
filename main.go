@@ -66,6 +66,9 @@ func ndkHome() string {
 	if v := os.Getenv(androidNDKHome); v != "" {
 		return v
 	}
+	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
+		return filepath.Join(v, "android-ndk-bundle")
+	}
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
 		return filepath.Join(v, "android-ndk-bundle")
 	}
