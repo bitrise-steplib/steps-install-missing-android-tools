@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-android/sdk"
-	"github.com/bitrise-io/go-steputils/input"
+	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
@@ -17,49 +17,18 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
 	"github.com/hashicorp/go-version"
-	"github.com/pkg/errors"
 )
 
 const platformDirName = "platforms"
 const androidNDKHome = "ANDROID_NDK_HOME"
 
-// ConfigsModel ...
-type ConfigsModel struct {
-	GradlewPath string
-	AndroidHome string
-	NDKRevision string
+// Config ...
+type Config struct {
+	GradlewPath    string `env:"gradlew_path,file"`
+	AndroidHome    string `env:"ANDROID_HOME"`
+	AndroidSDKRoot string `env:"ANDROID_SDK_ROOT"`
+	NDKRevision    string `env:"ndk_revision"`
 }
-
-func createConfigsModelFromEnvs() ConfigsModel {
-	return ConfigsModel{
-		GradlewPath: os.Getenv("gradlew_path"),
-		AndroidHome: os.Getenv("ANDROID_HOME"),
-		NDKRevision: os.Getenv("ndk_revision"),
-	}
-}
-
-func (configs ConfigsModel) print() {
-	log.Infof("Configs:")
-	log.Printf("- GradlewPath: %s", configs.GradlewPath)
-	log.Printf("- AndroidHome: %s", configs.AndroidHome)
-	log.Printf("- NDKRevision: %s", configs.NDKRevision)
-}
-
-func (configs ConfigsModel) validate() error {
-	if err := input.ValidateIfPathExists(configs.GradlewPath); err != nil {
-		return errors.New("Issue with input GradlewPath: " + err.Error())
-	}
-
-	if err := input.ValidateIfNotEmpty(configs.AndroidHome); err != nil {
-		return errors.New("Issue with input AndroidHome: " + err.Error())
-	}
-
-	return nil
-}
-
-// -----------------------
-// --- Functions
-// -----------------------
 
 func failf(format string, v ...interface{}) {
 	log.Errorf(format, v...)
@@ -99,6 +68,9 @@ func ndkHome() string {
 		return v
 	}
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
+		return filepath.Join(v, "android-ndk-bundle")
+	}
+	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
 		return filepath.Join(v, "android-ndk-bundle")
 	}
 	if v := os.Getenv("HOME"); v != "" {
@@ -196,35 +168,30 @@ func updateNDKPath(path string) error {
 	return nil
 }
 
-// -----------------------
-// --- Main
-// -----------------------
-
 func main() {
 	// Input validation
-	configs := createConfigsModelFromEnvs()
+	var config Config
+	if err := stepconf.Parse(&config); err != nil {
+		log.Errorf("%s", err)
+	}
 
 	fmt.Println()
-	configs.print()
-
-	if err := configs.validate(); err != nil {
-		failf(err.Error())
-	}
+	stepconf.Print(config)
 
 	fmt.Println()
 	log.Infof("Preparation")
 
 	// Set executable permission for gradlew
 	log.Printf("Set executable permission for gradlew")
-	if err := os.Chmod(configs.GradlewPath, 0770); err != nil {
+	if err := os.Chmod(config.GradlewPath, 0770); err != nil {
 		failf("Failed to set executable permission for gradlew, error: %s", err)
 	}
 
 	fmt.Println()
-	if configs.NDKRevision != "" {
+	if config.NDKRevision != "" {
 		log.Infof("Installing NDK bundle")
 
-		if err := updateNDK(configs.NDKRevision); err != nil {
+		if err := updateNDK(config.NDKRevision); err != nil {
 			failf("Failed to download NDK bundle, error: %s", err)
 		}
 	} else {
@@ -242,9 +209,12 @@ func main() {
 
 	// Initialize Android SDK
 	log.Printf("Initialize Android SDK")
-	androidSdk, err := sdk.New(configs.AndroidHome)
+	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
+		AndroidHome:    config.AndroidHome,
+		AndroidSDKRoot: config.AndroidSDKRoot,
+	})
 	if err != nil {
-		failf("Failed to initialize Android SDK, error: %s", err)
+		failf("Failed to initialize Android SDK: %s", err)
 	}
 
 	androidcomponents.SetLogger(log.NewDefaultLogger(false))
@@ -260,7 +230,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure required Android SDK components")
 
-	if err := androidcomponents.Ensure(androidSdk, configs.GradlewPath); err != nil {
+	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath); err != nil {
 		failf("Failed to ensure android components, error: %s", err)
 	}
 
