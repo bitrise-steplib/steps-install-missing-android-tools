@@ -8,5 +8,4 @@ require (
 	github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-version v1.3.0
-	github.com/pkg/errors v0.9.1
 )
