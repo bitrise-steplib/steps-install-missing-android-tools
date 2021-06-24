@@ -22,6 +22,7 @@ import (
 const platformDirName = "platforms"
 const androidNDKHome = "ANDROID_NDK_HOME"
 
+// Config ...
 type Config struct {
 	GradlewPath    string `env:"gradlew_path,file"`
 	AndroidHome    string `env:"ANDROID_HOME"`
