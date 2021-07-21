@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -19,7 +18,6 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-const platformDirName = "platforms"
 const androidNDKHome = "ANDROID_NDK_HOME"
 
 // Config ...
@@ -109,10 +107,6 @@ func updateNDK(revision string) error {
 		return err
 	}
 
-	if err := ensureNDKPath(ndkHome); err != nil {
-		return err
-	}
-
 	if !inPath(ndkHome) {
 		log.Printf("Append to $PATH")
 		if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), ndkHome)); err != nil {
@@ -127,44 +121,6 @@ func updateNDK(revision string) error {
 		}
 	}
 
-	return nil
-}
-
-func ensureNDKPath(ndkHome string) error {
-	log.Printf("searching for platforms dir in %s", ndkHome)
-	var foundPDPath string
-	if err := filepath.Walk(ndkHome, func(currentPath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() && info.Name() == platformDirName {
-			foundPDPath = path.Dir(currentPath)
-			log.Printf("found platforms dir at %s", foundPDPath)
-			if foundPDPath != ndkHome {
-				return updateNDKPath(foundPDPath)
-			}
-			log.Printf("%s is a valid NDK dir, no need to update", foundPDPath)
-			return nil
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	if foundPDPath == "" {
-		return fmt.Errorf("could not locate platform dir at ndk home: %s", ndkHome)
-	}
-	return nil
-}
-
-func updateNDKPath(path string) error {
-	if err := os.Setenv(androidNDKHome, path); err != nil {
-		return fmt.Errorf("failed to add path key %s with value %s", androidNDKHome, path)
-	}
-	if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, path); err != nil {
-		return fmt.Errorf("failed to export with envman key %s value %s", androidNDKHome, path)
-	}
-	log.Printf("updated NDK HOME path to %s", path)
 	return nil
 }
 
