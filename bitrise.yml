@@ -88,6 +88,9 @@ workflows:
         title: Step test installing ndk
     - path::./:
         title: Step test installed ndk
+    - gradle-runner:
+        inputs:
+        - gradle_task: assembleDebug
 
   test_react_native:
     envs:
@@ -162,6 +165,10 @@ workflows:
         title: Another version case
         inputs:
         - ndk_revision: "17"
+    - path::./:
+        title: NDK r22 (Doesn't contain platforms dir anymore)
+        inputs:
+          - ndk_revision: "22"
 
   test_android-sdk21-tools-21.0.1:
     envs:
