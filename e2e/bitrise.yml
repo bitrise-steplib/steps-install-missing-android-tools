@@ -225,6 +225,7 @@ workflows:
         - gradle_task: assembleDebug
 
   test_android-sdk20:
+    summary: Test installing SDK platform 20 (not preinstalled on stacks)
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-sdk20.git
     - BRANCH: master
@@ -250,9 +251,6 @@ workflows:
         - branch: $BRANCH
     - path::./:
         title: Execute step
-    - gradle-runner:
-        inputs:
-        - gradle_task: assembleDebug
 
   test_android-sdk22-subdir:
     envs:
