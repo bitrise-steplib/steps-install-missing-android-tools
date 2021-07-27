@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -119,7 +120,7 @@ func updateNDK(revision string) error {
 	}
 
 	var unzippedDirName string
-	dirs, err := os.ReadDir(unzipTarget)
+	dirs, err := ioutil.ReadDir(unzipTarget)
 	for _, dir := range dirs {
 		if subDirPattern.MatchString(dir.Name()) {
 			unzippedDirName = dir.Name()
