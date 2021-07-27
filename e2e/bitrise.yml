@@ -127,8 +127,11 @@ workflows:
     - GRADLEW_PATH: ./gradlew
     before_run:
     - _setup
-    after_run:
-    - _run_and_build
+    steps:
+    - path::./:
+        title: Execute step
+    # Not executing any Gradle build in this test because the SDK version used in this repo has a known issue and
+    # crashes the Gradle build (the issue is fixed in later SDK versions though)
 
   test_android-sdk22-subdir:
     envs:
