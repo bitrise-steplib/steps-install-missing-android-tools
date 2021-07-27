@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -66,15 +67,15 @@ func ndkHome() string {
 		return v
 	}
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
-		return filepath.Join(v, "android-ndk-bundle")
+		return filepath.Join(v, "ndk-bundle")
 	}
 	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
-		return filepath.Join(v, "android-ndk-bundle")
+		return filepath.Join(v, "ndk-bundle")
 	}
 	if v := os.Getenv("HOME"); v != "" {
-		return filepath.Join(v, "android-ndk-bundle")
+		return filepath.Join(v, "ndk-bundle")
 	}
-	return "android-ndk-bundle"
+	return "ndk-bundle"
 }
 
 func inPath(path string) bool {
@@ -85,40 +86,63 @@ func updateNDK(revision string) error {
 	ndkURL := ndkDownloadURL(revision)
 	ndkHome := ndkHome()
 
-	if currentRevision := installedNDKVersion(ndkHome); currentRevision == revision {
-		log.Donef("NDK r%s already installed", revision)
+	currentRevision := installedNDKVersion(ndkHome)
+	if currentRevision == revision {
+		log.Donef("NDK r%s already installed at %s", revision, ndkHome)
 		return nil
 	}
 
-	log.Printf("NDK home: %s", ndkHome)
-	log.Printf("Cleaning")
+	if currentRevision != "" {
+		log.Printf("NDK version %s found at: %s", currentRevision, ndkHome)
+	}
 
+	log.Printf("Removing NDK...")
 	if err := os.RemoveAll(ndkHome); err != nil {
 		return err
 	}
+	log.Printf("Done")
 
-	if err := pathutil.EnsureDirExist(ndkHome); err != nil {
+	log.Printf("Downloading NDK r%s...", revision)
+	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
+	// then rename the subdirectory to ndk-bundle
+	subDirPattern, err := regexp.Compile("android-ndk-.*")
+	if err != nil {
 		return err
 	}
 
-	log.Printf("Downloading")
-
-	if err := command.DownloadAndUnZIP(ndkURL, ndkHome); err != nil {
+	unzipTarget := filepath.Dir(ndkHome)
+	if err := pathutil.EnsureDirExist(unzipTarget); err != nil {
 		return err
 	}
+	if err := command.DownloadAndUnZIP(ndkURL, unzipTarget); err != nil {
+		return err
+	}
+
+	var unzippedDirName string
+	dirs, err := os.ReadDir(unzipTarget)
+	for _, dir := range dirs {
+		if subDirPattern.MatchString(dir.Name()) {
+			unzippedDirName = dir.Name()
+		}
+	}
+	if err := os.Rename(filepath.Join(unzipTarget, unzippedDirName), ndkHome); err != nil {
+		return err
+	}
+
+	log.Printf("Done")
 
 	if !inPath(ndkHome) {
-		log.Printf("Append to $PATH")
+		log.Printf("Appended NDK folder to $PATH")
 		if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), ndkHome)); err != nil {
 			return err
 		}
 	}
 
 	if os.Getenv(androidNDKHome) == "" {
-		log.Printf("Export %s: %s", androidNDKHome, ndkHome)
 		if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, ndkHome); err != nil {
 			return err
 		}
+		log.Printf("Exported $%s: %s", androidNDKHome, ndkHome)
 	}
 
 	return nil
@@ -164,7 +188,8 @@ func main() {
 	}
 
 	// Initialize Android SDK
-	log.Printf("Initialize Android SDK")
+	fmt.Println()
+	log.Infof("Initialize Android SDK")
 	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
 		AndroidHome:    config.AndroidHome,
 		AndroidSDKRoot: config.AndroidSDKRoot,

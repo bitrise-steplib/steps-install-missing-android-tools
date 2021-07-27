@@ -37,11 +37,16 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             yarn
-    after_run:
-    - _run_and_build
+    - path::./:
+        title: Execute step
+        inputs:
+          - ndk_revision: 21
+    - gradle-runner:
+        inputs:
+        - gradle_task: assembleDebug
 
   test_ndk_install:
-    summary: Test installing multiple NDK revisions
+    summary: Test installing multiple NDK revisions and compare installed version numbers to expected values
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/android-ndk-sample-project.git
     - BRANCH: ndk22-compatible
@@ -57,20 +62,72 @@ workflows:
     - path::./:
         title: Execute step with NDK r18
         inputs:
-        - ndk_revision: "18"
+        - ndk_revision: 18
+    - script:
+        title: Check installed NDK version
+        inputs:
+        - content: |-
+            EXPECTED_VERSION=18.0.5002713
+            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
+              echo "Unexpected installed NDK version: $NDK_VERSION"
+              echo "Expected: $EXPECTED_VERSION"
+              exit 1
+            else
+              echo "NDK version is correct: $NDK_VERSION"
+            fi
     - path::./:
         title: Execute step again with NDK r18
         inputs:
-        - ndk_revision: "18"
+        - ndk_revision: 18
+    - script:
+        title: Check installed NDK version
+        inputs:
+        - content: |-
+            EXPECTED_VERSION=18.0.5002713
+            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
+              echo "Unexpected installed NDK version: $NDK_VERSION"
+              echo "Expected: $EXPECTED_VERSION"
+              exit 1
+            else
+              echo "NDK version is correct: $NDK_VERSION"
+            fi
     - path::./:
         title: Execute step with NDK r17
         inputs:
-        - ndk_revision: "17"
+        - ndk_revision: 17
+    - script:
+        title: Check installed NDK version
+        inputs:
+        - content: |-
+            EXPECTED_VERSION=17.0.4754217
+            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
+              echo "Unexpected installed NDK version: $NDK_VERSION"
+              echo "Expected: $EXPECTED_VERSION"
+              exit 1
+            else
+              echo "NDK version is correct: $NDK_VERSION"
+            fi
     - path::./:
         title: Execute step with NDK r22
         description: NDK r22 doesn't contain the platforms dir anymore
         inputs:
-        - ndk_revision: "22"
+        - ndk_revision: 22
+    - script:
+        title: Check installed NDK version
+        inputs:
+        - content: |-
+            EXPECTED_VERSION=22.0.7026061
+            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
+              echo "Unexpected installed NDK version: $NDK_VERSION"
+              echo "Expected: $EXPECTED_VERSION"
+              exit 1
+            else
+              echo "NDK version is correct: $NDK_VERSION"
+            fi
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug
