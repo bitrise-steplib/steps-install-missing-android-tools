@@ -124,6 +124,9 @@ func updateNdk(revision string) error {
 	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
 	// then rename the subdirectory to ndk-bundle
 	unzippedDirName := fmt.Sprintf("android-ndk-r%s", revision)
+	if err := os.RemoveAll(newNdkHome); err != nil {
+		return err
+	}
 	if err := os.Rename(filepath.Join(newNdkHomeParentDir, unzippedDirName), newNdkHome); err != nil {
 		return err
 	}
