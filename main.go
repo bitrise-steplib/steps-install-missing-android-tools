@@ -19,14 +19,14 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-const androidNDKHome = "ANDROID_NDK_HOME"
+const androidNdkHome = "ANDROID_NDK_HOME"
 
 // Config ...
 type Config struct {
 	GradlewPath    string `env:"gradlew_path,file"`
 	AndroidHome    string `env:"ANDROID_HOME"`
-	AndroidSDKRoot string `env:"ANDROID_SDK_ROOT"`
-	NDKRevision    string `env:"ndk_revision"`
+	AndroidSdkRoot string `env:"ANDROID_SDK_ROOT"`
+	NdkRevision    string `env:"ndk_revision"`
 }
 
 func failf(format string, v ...interface{}) {
@@ -34,11 +34,11 @@ func failf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func ndkDownloadURL(revision string) string {
+func ndkDownloadUrl(revision string) string {
 	return fmt.Sprintf("https://dl.google.com/android/repository/android-ndk-r%s-%s-x86_64.zip", revision, runtime.GOOS)
 }
 
-func installedNdkVersion(ndkHome string) string {
+func ndkRevision(ndkHome string) string {
 	propertiesPath := filepath.Join(ndkHome, "source.properties")
 
 	content, err := fileutil.ReadStringFromFile(propertiesPath)
@@ -63,13 +63,15 @@ func installedNdkVersion(ndkHome string) string {
 }
 
 func currentNdkHome() string {
-	if v := os.Getenv(androidNDKHome); v != "" {
+	if v := os.Getenv(androidNdkHome); v != "" {
 		return v
 	}
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
+		// $ANDROID_HOME is deprecated
 		return filepath.Join(v, "ndk-bundle")
 	}
 	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
+		// $ANDROID_SDK_ROOT is preferred over $ANDROID_HOME
 		return filepath.Join(v, "ndk-bundle")
 	}
 	if v := os.Getenv("HOME"); v != "" {
@@ -78,21 +80,23 @@ func currentNdkHome() string {
 	return "ndk-bundle"
 }
 
-func ndkInstallLocation() (string, error) {
+func newNdkHome() (string, error) {
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
+		// $ANDROID_HOME is deprecated
 		return filepath.Join(v, "ndk-bundle"), nil
 	}
 	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
+		// $ANDROID_SDK_ROOT is preferred over $ANDROID_HOME
 		return filepath.Join(v, "ndk-bundle"), nil
 	}
 	return "", errors.New("neither $ANDROID_HOME nor $ANDROID_SDK_ROOT is specified")
 }
 
 func updateNdk(revision string) error {
-	ndkURL := ndkDownloadURL(revision)
+	ndkDownloadUrl := ndkDownloadUrl(revision)
 	currentNdkHome := currentNdkHome()
 
-	currentRevision := installedNdkVersion(currentNdkHome)
+	currentRevision := ndkRevision(currentNdkHome)
 	if currentRevision == revision {
 		log.Donef("NDK r%s already installed at %s", revision, currentNdkHome)
 		return nil
@@ -109,7 +113,7 @@ func updateNdk(revision string) error {
 	log.Printf("Done")
 
 	log.Printf("Downloading NDK r%s...", revision)
-	newNdkHome, err := ndkInstallLocation()
+	newNdkHome, err := newNdkHome()
 	if err != nil {
 		return err
 	}
@@ -117,7 +121,7 @@ func updateNdk(revision string) error {
 	if err := pathutil.EnsureDirExist(newNdkHomeParentDir); err != nil {
 		return err
 	}
-	if err := command.DownloadAndUnZIP(ndkURL, newNdkHomeParentDir); err != nil {
+	if err := command.DownloadAndUnZIP(ndkDownloadUrl, newNdkHomeParentDir); err != nil {
 		return err
 	}
 
@@ -138,10 +142,10 @@ func updateNdk(revision string) error {
 		return err
 	}
 
-	if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, newNdkHome); err != nil {
+	if err := tools.ExportEnvironmentWithEnvman(androidNdkHome, newNdkHome); err != nil {
 		return err
 	}
-	log.Printf("Exported $%s: %s", androidNDKHome, newNdkHome)
+	log.Printf("Exported $%s: %s", androidNdkHome, newNdkHome)
 
 	return nil
 }
@@ -166,10 +170,10 @@ func main() {
 	}
 
 	fmt.Println()
-	if config.NDKRevision != "" {
+	if config.NdkRevision != "" {
 		log.Infof("Installing NDK bundle")
 
-		if err := updateNdk(config.NDKRevision); err != nil {
+		if err := updateNdk(config.NdkRevision); err != nil {
 			failf("Failed to download NDK bundle, error: %s", err)
 		}
 	} else {
@@ -190,7 +194,7 @@ func main() {
 	log.Infof("Initialize Android SDK")
 	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
 		AndroidHome:    config.AndroidHome,
-		AndroidSDKRoot: config.AndroidSDKRoot,
+		AndroidSDKRoot: config.AndroidSdkRoot,
 	})
 	if err != nil {
 		failf("Failed to initialize Android SDK: %s", err)
