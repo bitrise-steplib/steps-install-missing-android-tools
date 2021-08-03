@@ -34,12 +34,12 @@ func failf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func NDKDownloadURL(revision string) string {
+func ndkDownloadURL(revision string) string {
 	return fmt.Sprintf("https://dl.google.com/android/repository/android-ndk-r%s-%s-x86_64.zip", revision, runtime.GOOS)
 }
 
-func NDKRevision(NDKHome string) string {
-	propertiesPath := filepath.Join(NDKHome, "source.properties")
+func ndkRevision(ndkHome string) string {
+	propertiesPath := filepath.Join(ndkHome, "source.properties")
 
 	content, err := fileutil.ReadStringFromFile(propertiesPath)
 	if err != nil {
@@ -93,10 +93,10 @@ func newNDKHome() (string, error) {
 }
 
 func updateNDK(revision string) error {
-	NDKDownloadURL := NDKDownloadURL(revision)
+	ndkDownloadURL := ndkDownloadURL(revision)
 	currentNdkHome := currentNDKHome()
 
-	currentRevision := NDKRevision(currentNdkHome)
+	currentRevision := ndkRevision(currentNdkHome)
 	if currentRevision == revision {
 		log.Donef("NDK r%s already installed at %s", revision, currentNdkHome)
 		return nil
@@ -121,7 +121,7 @@ func updateNDK(revision string) error {
 	if err := pathutil.EnsureDirExist(newNDKHomeParentDir); err != nil {
 		return err
 	}
-	if err := command.DownloadAndUnZIP(NDKDownloadURL, newNDKHomeParentDir); err != nil {
+	if err := command.DownloadAndUnZIP(ndkDownloadURL, newNDKHomeParentDir); err != nil {
 		return err
 	}
 
