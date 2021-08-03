@@ -19,14 +19,14 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-const androidNdkHome = "ANDROID_NDK_HOME"
+const androidNDKHome = "ANDROID_NDK_HOME"
 
 // Config ...
 type Config struct {
 	GradlewPath    string `env:"gradlew_path,file"`
 	AndroidHome    string `env:"ANDROID_HOME"`
-	AndroidSdkRoot string `env:"ANDROID_SDK_ROOT"`
-	NdkRevision    string `env:"ndk_revision"`
+	AndroidSDKRoot string `env:"ANDROID_SDK_ROOT"`
+	NDKRevision    string `env:"ndk_revision"`
 }
 
 func failf(format string, v ...interface{}) {
@@ -34,12 +34,12 @@ func failf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func ndkDownloadUrl(revision string) string {
+func NDKDownloadURL(revision string) string {
 	return fmt.Sprintf("https://dl.google.com/android/repository/android-ndk-r%s-%s-x86_64.zip", revision, runtime.GOOS)
 }
 
-func ndkRevision(ndkHome string) string {
-	propertiesPath := filepath.Join(ndkHome, "source.properties")
+func NDKRevision(NDKHome string) string {
+	propertiesPath := filepath.Join(NDKHome, "source.properties")
 
 	content, err := fileutil.ReadStringFromFile(propertiesPath)
 	if err != nil {
@@ -62,8 +62,8 @@ func ndkRevision(ndkHome string) string {
 	return ""
 }
 
-func currentNdkHome() string {
-	if v := os.Getenv(androidNdkHome); v != "" {
+func currentNDKHome() string {
+	if v := os.Getenv(androidNDKHome); v != "" {
 		return v
 	}
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
@@ -80,7 +80,7 @@ func currentNdkHome() string {
 	return "ndk-bundle"
 }
 
-func newNdkHome() (string, error) {
+func newNDKHome() (string, error) {
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
 		// $ANDROID_HOME is deprecated
 		return filepath.Join(v, "ndk-bundle"), nil
@@ -92,11 +92,11 @@ func newNdkHome() (string, error) {
 	return "", errors.New("neither $ANDROID_HOME nor $ANDROID_SDK_ROOT is specified")
 }
 
-func updateNdk(revision string) error {
-	ndkDownloadUrl := ndkDownloadUrl(revision)
-	currentNdkHome := currentNdkHome()
+func updateNDK(revision string) error {
+	NDKDownloadURL := NDKDownloadURL(revision)
+	currentNdkHome := currentNDKHome()
 
-	currentRevision := ndkRevision(currentNdkHome)
+	currentRevision := NDKRevision(currentNdkHome)
 	if currentRevision == revision {
 		log.Donef("NDK r%s already installed at %s", revision, currentNdkHome)
 		return nil
@@ -113,39 +113,39 @@ func updateNdk(revision string) error {
 	log.Printf("Done")
 
 	log.Printf("Downloading NDK r%s...", revision)
-	newNdkHome, err := newNdkHome()
+	newNDKHome, err := newNDKHome()
 	if err != nil {
 		return err
 	}
-	newNdkHomeParentDir := filepath.Dir(newNdkHome)
-	if err := pathutil.EnsureDirExist(newNdkHomeParentDir); err != nil {
+	newNDKHomeParentDir := filepath.Dir(newNDKHome)
+	if err := pathutil.EnsureDirExist(newNDKHomeParentDir); err != nil {
 		return err
 	}
-	if err := command.DownloadAndUnZIP(ndkDownloadUrl, newNdkHomeParentDir); err != nil {
+	if err := command.DownloadAndUnZIP(NDKDownloadURL, newNDKHomeParentDir); err != nil {
 		return err
 	}
 
 	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
 	// then rename the subdirectory to ndk-bundle
 	unzippedDirName := fmt.Sprintf("android-ndk-r%s", revision)
-	if err := os.RemoveAll(newNdkHome); err != nil {
+	if err := os.RemoveAll(newNDKHome); err != nil {
 		return err
 	}
-	if err := os.Rename(filepath.Join(newNdkHomeParentDir, unzippedDirName), newNdkHome); err != nil {
+	if err := os.Rename(filepath.Join(newNDKHomeParentDir, unzippedDirName), newNDKHome); err != nil {
 		return err
 	}
 
 	log.Printf("Done")
 
 	log.Printf("Append NDK folder to $PATH")
-	if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), newNdkHome)); err != nil {
+	if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), newNDKHome)); err != nil {
 		return err
 	}
 
-	if err := tools.ExportEnvironmentWithEnvman(androidNdkHome, newNdkHome); err != nil {
+	if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, newNDKHome); err != nil {
 		return err
 	}
-	log.Printf("Exported $%s: %s", androidNdkHome, newNdkHome)
+	log.Printf("Exported $%s: %s", androidNDKHome, newNDKHome)
 
 	return nil
 }
@@ -170,10 +170,10 @@ func main() {
 	}
 
 	fmt.Println()
-	if config.NdkRevision != "" {
+	if config.NDKRevision != "" {
 		log.Infof("Installing NDK bundle")
 
-		if err := updateNdk(config.NdkRevision); err != nil {
+		if err := updateNDK(config.NDKRevision); err != nil {
 			failf("Failed to download NDK bundle, error: %s", err)
 		}
 	} else {
@@ -194,7 +194,7 @@ func main() {
 	log.Infof("Initialize Android SDK")
 	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
 		AndroidHome:    config.AndroidHome,
-		AndroidSDKRoot: config.AndroidSdkRoot,
+		AndroidSDKRoot: config.AndroidSDKRoot,
 	})
 	if err != nil {
 		failf("Failed to initialize Android SDK: %s", err)
