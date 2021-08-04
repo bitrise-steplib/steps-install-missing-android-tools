@@ -1,11 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 
@@ -39,8 +38,8 @@ func ndkDownloadURL(revision string) string {
 	return fmt.Sprintf("https://dl.google.com/android/repository/android-ndk-r%s-%s-x86_64.zip", revision, runtime.GOOS)
 }
 
-func installedNDKVersion(ndkHome string) string {
-	propertiesPath := filepath.Join(ndkHome, "source.properties")
+func ndkRevision(ndkPath string) string {
+	propertiesPath := filepath.Join(ndkPath, "source.properties")
 
 	content, err := fileutil.ReadStringFromFile(propertiesPath)
 	if err != nil {
@@ -63,14 +62,16 @@ func installedNDKVersion(ndkHome string) string {
 	return ""
 }
 
-func ndkHome() string {
+func currentNDKHome() string {
 	if v := os.Getenv(androidNDKHome); v != "" {
 		return v
 	}
 	if v := os.Getenv("ANDROID_HOME"); v != "" {
+		// $ANDROID_HOME is deprecated
 		return filepath.Join(v, "ndk-bundle")
 	}
 	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
+		// $ANDROID_SDK_ROOT is preferred over $ANDROID_HOME
 		return filepath.Join(v, "ndk-bundle")
 	}
 	if v := os.Getenv("HOME"); v != "" {
@@ -79,72 +80,77 @@ func ndkHome() string {
 	return "ndk-bundle"
 }
 
-func inPath(path string) bool {
-	return strings.Contains(os.Getenv("PATH"), path)
+func newNDKHome() (string, error) {
+	if v := os.Getenv("ANDROID_HOME"); v != "" {
+		// $ANDROID_HOME is deprecated
+		return filepath.Join(v, "ndk-bundle"), nil
+	}
+	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
+		// $ANDROID_SDK_ROOT is preferred over $ANDROID_HOME
+		return filepath.Join(v, "ndk-bundle"), nil
+	}
+	return "", errors.New("neither $ANDROID_HOME nor $ANDROID_SDK_ROOT is specified")
 }
 
+// updateNDK downloads and extracts the required NDK revision (if not already installed to the correct location).
+// NDK is installed to the `ndk-bundle` subdirectory of the SDK location, while updating $ANDROID_NDK_HOME for
+// compatibility with older Android Gradle Plugin versions.
+// Details: https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 func updateNDK(revision string) error {
-	ndkURL := ndkDownloadURL(revision)
-	ndkHome := ndkHome()
+	ndkDownloadURL := ndkDownloadURL(revision)
+	currentNdkHome := currentNDKHome()
 
-	currentRevision := installedNDKVersion(ndkHome)
+	currentRevision := ndkRevision(currentNdkHome)
 	if currentRevision == revision {
-		log.Donef("NDK r%s already installed at %s", revision, ndkHome)
+		log.Donef("NDK r%s already installed at %s", revision, currentNdkHome)
 		return nil
 	}
 
 	if currentRevision != "" {
-		log.Printf("NDK version %s found at: %s", currentRevision, ndkHome)
+		log.Printf("NDK version %s found at: %s", currentRevision, currentNdkHome)
 	}
 
 	log.Printf("Removing NDK...")
-	if err := os.RemoveAll(ndkHome); err != nil {
+	if err := os.RemoveAll(currentNdkHome); err != nil {
 		return err
 	}
 	log.Printf("Done")
 
 	log.Printf("Downloading NDK r%s...", revision)
-	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
-	// then rename the subdirectory to ndk-bundle
-	subDirPattern, err := regexp.Compile("android-ndk-.*")
+	newNDKHome, err := newNDKHome()
 	if err != nil {
 		return err
 	}
-
-	unzipTarget := filepath.Dir(ndkHome)
-	if err := pathutil.EnsureDirExist(unzipTarget); err != nil {
+	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
+	// then rename the subdirectory to ndk-bundle
+	newNDKHomeParentDir := filepath.Dir(newNDKHome)
+	if err := pathutil.EnsureDirExist(newNDKHomeParentDir); err != nil {
 		return err
 	}
-	if err := command.DownloadAndUnZIP(ndkURL, unzipTarget); err != nil {
+	if err := command.DownloadAndUnZIP(ndkDownloadURL, newNDKHomeParentDir); err != nil {
 		return err
 	}
 
-	var unzippedDirName string
-	dirs, err := ioutil.ReadDir(unzipTarget)
-	for _, dir := range dirs {
-		if subDirPattern.MatchString(dir.Name()) {
-			unzippedDirName = dir.Name()
-		}
+	unzippedDirName := fmt.Sprintf("android-ndk-r%s", revision)
+	if err := os.RemoveAll(newNDKHome); err != nil {
+		return err
 	}
-	if err := os.Rename(filepath.Join(unzipTarget, unzippedDirName), ndkHome); err != nil {
+	if err := os.Rename(filepath.Join(newNDKHomeParentDir, unzippedDirName), newNDKHome); err != nil {
 		return err
 	}
 
 	log.Printf("Done")
 
-	if !inPath(ndkHome) {
-		log.Printf("Appended NDK folder to $PATH")
-		if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), ndkHome)); err != nil {
-			return err
-		}
+	log.Printf("Append NDK folder to $PATH")
+	// Old NDK folder was deleted above, its path can stay in $PATH
+	if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), newNDKHome)); err != nil {
+		return err
 	}
 
-	if os.Getenv(androidNDKHome) == "" {
-		if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, ndkHome); err != nil {
-			return err
-		}
-		log.Printf("Exported $%s: %s", androidNDKHome, ndkHome)
+	if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, newNDKHome); err != nil {
+		return err
 	}
+	log.Printf("Exported $%s: %s", androidNDKHome, newNDKHome)
 
 	return nil
 }
