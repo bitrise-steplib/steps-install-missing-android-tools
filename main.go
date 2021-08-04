@@ -38,8 +38,8 @@ func ndkDownloadURL(revision string) string {
 	return fmt.Sprintf("https://dl.google.com/android/repository/android-ndk-r%s-%s-x86_64.zip", revision, runtime.GOOS)
 }
 
-func ndkRevision(ndkHome string) string {
-	propertiesPath := filepath.Join(ndkHome, "source.properties")
+func ndkRevision(ndkPath string) string {
+	propertiesPath := filepath.Join(ndkPath, "source.properties")
 
 	content, err := fileutil.ReadStringFromFile(propertiesPath)
 	if err != nil {
@@ -92,6 +92,10 @@ func newNDKHome() (string, error) {
 	return "", errors.New("neither $ANDROID_HOME nor $ANDROID_SDK_ROOT is specified")
 }
 
+// updateNDK downloads and extracts the required NDK revision (if not already installed to the correct location).
+// NDK is installed to the `ndk-bundle` subdirectory of the SDK location, while updating $ANDROID_NDK_HOME for
+// compatibility with older Android Gradle Plugin versions.
+// Details: https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 func updateNDK(revision string) error {
 	ndkDownloadURL := ndkDownloadURL(revision)
 	currentNdkHome := currentNDKHome()
@@ -117,6 +121,8 @@ func updateNDK(revision string) error {
 	if err != nil {
 		return err
 	}
+	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
+	// then rename the subdirectory to ndk-bundle
 	newNDKHomeParentDir := filepath.Dir(newNDKHome)
 	if err := pathutil.EnsureDirExist(newNDKHomeParentDir); err != nil {
 		return err
@@ -125,8 +131,6 @@ func updateNDK(revision string) error {
 		return err
 	}
 
-	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
-	// then rename the subdirectory to ndk-bundle
 	unzippedDirName := fmt.Sprintf("android-ndk-r%s", revision)
 	if err := os.RemoveAll(newNDKHome); err != nil {
 		return err
@@ -138,6 +142,7 @@ func updateNDK(revision string) error {
 	log.Printf("Done")
 
 	log.Printf("Append NDK folder to $PATH")
+	// Old NDK folder was deleted above, its path can stay in $PATH
 	if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), newNDKHome)); err != nil {
 		return err
 	}
