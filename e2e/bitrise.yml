@@ -150,32 +150,6 @@ workflows:
     after_run:
     - _run_and_build
 
-  test_android-sdk20:
-    summary: Test installing SDK platform 20 (not preinstalled on stacks)
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-sdk20.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    - GRADLEW_PATH: ./gradlew
-    before_run:
-    - _setup
-    steps:
-    - path::./:
-        title: Execute step
-    # Not executing any Gradle build in this test because the SDK version used in this repo has a known issue and
-    # crashes the Gradle build (the issue is fixed in later SDK versions though)
-
-  test_android-sdk22-subdir:
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-sdk22-subdir.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: src/build.gradle
-    - GRADLEW_PATH: src/gradlew
-    before_run:
-    - _setup
-    after_run:
-    - _run_and_build
-
   _setup:
     steps:
     - script:
