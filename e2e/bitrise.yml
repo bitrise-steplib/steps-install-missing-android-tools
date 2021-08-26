@@ -164,17 +164,6 @@ workflows:
     after_run:
     - _run_and_build
 
-  test_old_gradle:
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/2048-android.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    - GRADLEW_PATH: ./gradlew
-    before_run:
-    - _setup
-    after_run:
-    - _run_and_build
-
   test_android-sdk20:
     summary: Test installing SDK platform 20 (not preinstalled on stacks)
     envs:
