@@ -154,6 +154,8 @@ workflows:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/Bitrise-Android-Sample.git
     - BRANCH: main
+    - GRADLE_BUILD_FILE_PATH: build.gradle
+    - GRADLEW_PATH: ./gradlew
     before_run:
     - _setup
     after_run:
