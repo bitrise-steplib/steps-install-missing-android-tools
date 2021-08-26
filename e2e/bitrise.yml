@@ -132,20 +132,6 @@ workflows:
         inputs:
         - gradle_task: assembleDebug
 
-  test_android-sdk21-tools-21.0.1:
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/android-sdk21-tools-21.0.1.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    - GRADLEW_PATH: ./gradlew
-    before_run:
-    - _setup
-    steps:
-    - path::./:
-        title: Execute step
-    # Not executing any Gradle build in this test because the SDK version used in this repo has a known issue and
-    # crashes the Gradle build (the issue is fixed in later SDK versions though)
-
   test_support_library:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-x.git
