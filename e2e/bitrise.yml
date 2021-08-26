@@ -150,6 +150,23 @@ workflows:
     after_run:
     - _run_and_build
 
+  test_build_tools_not_installed:
+    envs:
+    - SAMPLE_APP_URL: https://github.com/bitrise-io/Bitrise-Android-Sample.git
+    - BRANCH: main
+    before_run:
+    - _setup
+    after_run:
+    - _run_and_build
+    steps:
+    - script:
+        title: Remove preinstalled SDK build-tools
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            rm -rf $ANDROID_HOME/build-tools
+
   _setup:
     steps:
     - script:
