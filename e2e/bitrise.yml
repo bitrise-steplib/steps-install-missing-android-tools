@@ -132,20 +132,6 @@ workflows:
         inputs:
         - gradle_task: assembleDebug
 
-  test_android-sdk21-tools-21.0.1:
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/android-sdk21-tools-21.0.1.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    - GRADLEW_PATH: ./gradlew
-    before_run:
-    - _setup
-    steps:
-    - path::./:
-        title: Execute step
-    # Not executing any Gradle build in this test because the SDK version used in this repo has a known issue and
-    # crashes the Gradle build (the issue is fixed in later SDK versions though)
-
   test_support_library:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-x.git
@@ -164,45 +150,44 @@ workflows:
     after_run:
     - _run_and_build
 
-  test_old_gradle:
+  test_build_tools_not_installed:
     envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/2048-android.git
-    - BRANCH: master
+    - SAMPLE_APP_URL: https://github.com/bitrise-io/Bitrise-Android-Sample.git
+    - BRANCH: main
     - GRADLE_BUILD_FILE_PATH: build.gradle
     - GRADLEW_PATH: ./gradlew
     before_run:
     - _setup
     after_run:
     - _run_and_build
-
-  test_android-sdk20:
-    summary: Test installing SDK platform 20 (not preinstalled on stacks)
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-sdk20.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    - GRADLEW_PATH: ./gradlew
-    before_run:
-    - _setup
+    - _restore_build_tools
     steps:
-    - path::./:
-        title: Execute step
-    # Not executing any Gradle build in this test because the SDK version used in this repo has a known issue and
-    # crashes the Gradle build (the issue is fixed in later SDK versions though)
-
-  test_android-sdk22-subdir:
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-sdk22-subdir.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: src/build.gradle
-    - GRADLEW_PATH: src/gradlew
-    before_run:
-    - _setup
-    after_run:
-    - _run_and_build
+    - script:
+        title: Remove preinstalled SDK build-tools
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            mv $ANDROID_HOME/build-tools $ANDROID_HOME/build-tools-original
 
   _setup:
     steps:
+    - script:
+          run_if: $.IsCI
+          inputs:
+            - content: |-
+                #!/usr/bin/env bash
+                set -ex
+                if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+                  sudo update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac
+                  sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
+                  export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
+                  envman add --key JAVA_HOME --value "/usr/lib/jvm/java-11-openjdk-amd64"
+                elif [[ "$OSTYPE" == "darwin"* ]]; then
+                  jenv global 11
+                  export JAVA_HOME="$(jenv prefix)"
+                  envman add --key JAVA_HOME --value "$(jenv prefix)"
+                fi
     - script:
         title: Clean _tmp dir
         inputs:
@@ -229,3 +214,13 @@ workflows:
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug
+  _restore_build_tools:
+    steps:
+    - script:
+        title: Restore preinstalled SDK build-tools
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            rm -rf $ANDROID_HOME/build-tools
+            mv $ANDROID_HOME/build-tools-original $ANDROID_HOME/build-tools
