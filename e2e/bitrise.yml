@@ -160,6 +160,7 @@ workflows:
     - _setup
     after_run:
     - _run_and_build
+    - _restore_build_tools
     steps:
     - script:
         title: Remove preinstalled SDK build-tools
@@ -167,7 +168,7 @@ workflows:
         - content: |-
             #!/usr/bin/env bash
             set -ex
-            rm -rf $ANDROID_HOME/build-tools
+            mv $ANDROID_HOME/build-tools $ANDROID_HOME/build-tools-original
 
   _setup:
     steps:
@@ -213,3 +214,13 @@ workflows:
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug
+  _restore_build_tools:
+    steps:
+    - script:
+        title: Restore preinstalled SDK build-tools
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            rm -rf $ANDROID_HOME/build-tools
+            mv $ANDROID_HOME/build-tools-original $ANDROID_HOME/build-tools
