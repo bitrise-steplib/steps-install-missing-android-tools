@@ -51,7 +51,11 @@ func InstallLicences(androidSdk *sdk.Model) error {
 		cmdOpts := command.Opts{
 			Stdin: bytes.NewReader([]byte(strings.Repeat("y\n", 1000))),
 		}
-		licensesCmd := cmdFactory.Create(filepath.Join(androidSdk.GetAndroidHome(), "tools/bin/sdkmanager"), []string{"--licenses"}, &cmdOpts)
+		cmdLineToolsPath, err := androidSdk.CmdlineToolsPath()
+		if err != nil {
+			return err
+		}
+		licensesCmd := cmdFactory.Create(filepath.Join(cmdLineToolsPath, "sdkmanager"), []string{"--licenses"}, &cmdOpts)
 		if err := licensesCmd.Run(); err != nil {
 			logger.Warnf("Failed to install licenses using $(sdkmanager --licenses) command")
 			logger.Printf("Continue using legacy license installation...")
