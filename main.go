@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -29,8 +30,10 @@ type Config struct {
 	NDKRevision    string `env:"ndk_revision"`
 }
 
+var logger = log.NewLogger()
+
 func failf(format string, v ...interface{}) {
-	log.Errorf(format, v...)
+	logger.Errorf(format, v...)
 	os.Exit(1)
 }
 
@@ -102,21 +105,21 @@ func updateNDK(revision string) error {
 
 	currentRevision := ndkRevision(currentNdkHome)
 	if currentRevision == revision {
-		log.Donef("NDK r%s already installed at %s", revision, currentNdkHome)
+		logger.Donef("NDK r%s already installed at %s", revision, currentNdkHome)
 		return nil
 	}
 
 	if currentRevision != "" {
-		log.Printf("NDK version %s found at: %s", currentRevision, currentNdkHome)
+		logger.Printf("NDK version %s found at: %s", currentRevision, currentNdkHome)
 	}
 
-	log.Printf("Removing NDK...")
+	logger.Printf("Removing NDK...")
 	if err := os.RemoveAll(currentNdkHome); err != nil {
 		return err
 	}
-	log.Printf("Done")
+	logger.Printf("Done")
 
-	log.Printf("Downloading NDK r%s...", revision)
+	logger.Printf("Downloading NDK r%s...", revision)
 	newNDKHome, err := newNDKHome()
 	if err != nil {
 		return err
@@ -139,9 +142,9 @@ func updateNDK(revision string) error {
 		return err
 	}
 
-	log.Printf("Done")
+	logger.Printf("Done")
 
-	log.Printf("Append NDK folder to $PATH")
+	logger.Printf("Append NDK folder to $PATH")
 	// Old NDK folder was deleted above, its path can stay in $PATH
 	if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), newNDKHome)); err != nil {
 		return err
@@ -150,7 +153,7 @@ func updateNDK(revision string) error {
 	if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, newNDKHome); err != nil {
 		return err
 	}
-	log.Printf("Exported $%s: %s", androidNDKHome, newNDKHome)
+	logger.Printf("Exported $%s: %s", androidNDKHome, newNDKHome)
 
 	return nil
 }
@@ -158,32 +161,32 @@ func updateNDK(revision string) error {
 func main() {
 	// Input validation
 	var config Config
-	if err := stepconf.Parse(&config); err != nil {
-		log.Errorf("%s", err)
+	if err := stepconf.NewInputParser(env.NewRepository()).Parse(&config); err != nil {
+		logger.Errorf("%s", err)
 	}
 
 	fmt.Println()
 	stepconf.Print(config)
 
 	fmt.Println()
-	log.Infof("Preparation")
+	logger.Infof("Preparation")
 
 	// Set executable permission for gradlew
-	log.Printf("Set executable permission for gradlew")
+	logger.Printf("Set executable permission for gradlew")
 	if err := os.Chmod(config.GradlewPath, 0770); err != nil {
 		failf("Failed to set executable permission for gradlew, error: %s", err)
 	}
 
 	fmt.Println()
 	if config.NDKRevision != "" {
-		log.Infof("Installing NDK bundle")
+		logger.Infof("Installing NDK bundle")
 
 		if err := updateNDK(config.NDKRevision); err != nil {
 			failf("Failed to download NDK bundle, error: %s", err)
 		}
 	} else {
-		log.Infof("Clearing NDK environment")
-		log.Printf("Unset ANDROID_NDK_HOME")
+		logger.Infof("Clearing NDK environment")
+		logger.Printf("Unset ANDROID_NDK_HOME")
 
 		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
 			failf("Failed to unset environment variable, error: %s", err)
@@ -196,7 +199,7 @@ func main() {
 
 	// Initialize Android SDK
 	fmt.Println()
-	log.Infof("Initialize Android SDK")
+	logger.Infof("Initialize Android SDK")
 	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
 		AndroidHome:    config.AndroidHome,
 		AndroidSDKRoot: config.AndroidSDKRoot,
@@ -205,10 +208,8 @@ func main() {
 		failf("Failed to initialize Android SDK: %s", err)
 	}
 
-	androidcomponents.SetLogger(log.NewDefaultLogger(false))
-
 	// Ensure android licences
-	log.Printf("Ensure android licences")
+	logger.Printf("Ensure android licences")
 
 	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
 		failf("Failed to ensure android licences, error: %s", err)
@@ -216,12 +217,12 @@ func main() {
 
 	// Ensure required Android SDK components
 	fmt.Println()
-	log.Infof("Ensure required Android SDK components")
+	logger.Infof("Ensure required Android SDK components")
 
 	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath); err != nil {
 		failf("Failed to ensure android components, error: %s", err)
 	}
 
 	fmt.Println()
-	log.Donef("Required SDK components are installed")
+	logger.Donef("Required SDK components are installed")
 }

@@ -13,22 +13,17 @@ import (
 	"github.com/bitrise-io/go-android/sdk"
 	"github.com/bitrise-io/go-android/sdkcomponent"
 	"github.com/bitrise-io/go-android/sdkmanager"
-	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/fileutil"
-	_log "github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
 )
 
-type logger interface {
-	Warnf(string, ...interface{})
-	Printf(string, ...interface{})
-	Errorf(string, ...interface{})
-}
-
-var log logger = _log.NewDummyLogger()
+var logger = log.NewLogger()
+var cmdFactory = command.NewFactory(env.NewRepository())
 
 type installer struct {
 	androidSDK  *sdk.Model
@@ -36,14 +31,9 @@ type installer struct {
 	gradlewPath string
 }
 
-// SetLogger ...
-func SetLogger(l logger) {
-	log = l
-}
-
 // InstallLicences ...
 func InstallLicences(androidSdk *sdk.Model) error {
-	sdkManager, err := sdkmanager.New(androidSdk)
+	sdkManager, err := sdkmanager.New(androidSdk, cmdFactory)
 	if err != nil {
 		return err
 	}
@@ -58,12 +48,18 @@ func InstallLicences(androidSdk *sdk.Model) error {
 	}
 
 	if !sdkManager.IsLegacySDK() {
-		licensesCmd := command.New(filepath.Join(androidSdk.GetAndroidHome(), "tools/bin/sdkmanager"), "--licenses")
-		licensesCmd.SetStdin(bytes.NewReader([]byte(strings.Repeat("y\n", 1000))))
+		cmdOpts := command.Opts{
+			Stdin: bytes.NewReader([]byte(strings.Repeat("y\n", 1000))),
+		}
+		cmdLineToolsPath, err := androidSdk.CmdlineToolsPath()
+		if err != nil {
+			return err
+		}
+		licensesCmd := cmdFactory.Create(filepath.Join(cmdLineToolsPath, "sdkmanager"), []string{"--licenses"}, &cmdOpts)
 		if err := licensesCmd.Run(); err != nil {
-			log.Warnf("Failed to install licenses using $(sdkmanager --licenses) command")
-			log.Printf("Continue using legacy license installation...")
-			log.Printf("")
+			logger.Warnf("Failed to install licenses using $(sdkmanager --licenses) command")
+			logger.Printf("Continue using legacy license installation...")
+			logger.Printf("")
 		} else {
 			sdkLicencePath, oldLicenceHash := filepath.Join(licencesDir, "android-sdk-license"), "d56f5187479451eabf01fb78af6dfcb131a6481e"
 			if content, err := fileutil.ReadStringFromFile(sdkLicencePath); err == nil && strings.Contains(content, oldLicenceHash) {
@@ -95,7 +91,7 @@ func InstallLicences(androidSdk *sdk.Model) error {
 
 // Ensure ...
 func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
-	sdkManager, err := sdkmanager.New(androidSdk)
+	sdkManager, err := sdkmanager.New(androidSdk, cmdFactory)
 	if err != nil {
 		return err
 	}
@@ -107,7 +103,7 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 
 	return retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
-			log.Warnf("Retrying...")
+			logger.Warnf("Retrying...")
 		}
 		return i.scanDependencies()
 	})
@@ -115,8 +111,6 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
 
 func (i installer) getDependencyCases() map[string]func(match string) error {
 	return map[string]func(match string) error{
-		`(Observed package id 'ndk-bundle' in inconsistent location)`: i.ndkInconsistentLocation,
-		`(NDK not configured)`: i.ndkNotConfigured,
 		`failed to find target with hash string 'android-(.*)'\s*`:            i.target,
 		`failed to find Build Tools revision ([0-9.]*)\s*`:                    i.buildTool,
 		`Could not find (com\.android\.support:.*)\.`:                         i.extrasLib,
@@ -125,9 +119,11 @@ func (i installer) getDependencyCases() map[string]func(match string) error {
 }
 
 func getDependenciesOutput(projectLocation string) (string, error) {
-	gradleCmd := command.New("./gradlew", "dependencies", "--stacktrace")
-	gradleCmd.SetStdin(strings.NewReader("y"))
-	gradleCmd.SetDir(projectLocation)
+	cmdOpts := command.Opts{
+		Stdin: strings.NewReader("y"),
+		Dir:   projectLocation,
+	}
+	gradleCmd := cmdFactory.Create("./gradlew", []string{"dependencies", "--stacktrace"}, &cmdOpts)
 	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
 }
 
@@ -147,7 +143,7 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 					return fmt.Errorf("unable to solve a dependency installation for the output:\n%s", out)
 				}
 				if callbackErr := callback(matches[1]); callbackErr != nil {
-					log.Printf(out)
+					logger.Printf(out)
 					return callbackErr
 				}
 				err = nil
@@ -156,64 +152,23 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 		}
 	}
 	if scanner.Err() != nil {
-		log.Printf(out)
+		logger.Printf(out)
 		return scanner.Err()
 	}
 	return err
 }
 
-func (i installer) ndkNotConfigured(_ string) error {
-	log.Warnf("NDK not configured")
-
-	ndkComponent := sdkcomponent.SDKTool{SDKStylePath: "ndk-bundle", LegacySDKStylePath: "ndk-bundle"}
-	cmd := i.sdkManager.InstallCommand(ndkComponent)
-	cmd.SetStdin(strings.NewReader("y"))
-
-	log.Printf("Install and configure NDK bundle using:")
-	log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-		return fmt.Errorf("output: %s, error: %s", out, err)
-	}
-
-	bundlePath := filepath.Join(i.androidSDK.GetAndroidHome(), "ndk-bundle")
-
-	log.Printf("Setting environment variable (ANDROID_NDK_HOME) to:  %s", bundlePath)
-	if err := os.Setenv("ANDROID_NDK_HOME", bundlePath); err != nil {
-		return err
-	}
-	return tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", bundlePath)
-}
-
-func (i installer) ndkInconsistentLocation(_ string) error {
-	log.Warnf("NDK found on inconsistent path")
-
-	ndkUninstallComponent := sdkcomponent.SDKTool{SDKStylePath: "ndk-bundle", LegacySDKStylePath: "ndk-bundle"}
-	cmd := i.sdkManager.InstallCommand(ndkUninstallComponent)
-	cmd.SetStdin(strings.NewReader("y"))
-	cmd.GetCmd().Args = append([]string{cmd.GetCmd().Args[0], "--uninstall"}, cmd.GetCmd().Args[1:]...)
-
-	log.Printf("Removing NDK bundle using:")
-	log.Printf("$ %s", cmd.PrintableCommandArgs())
-
-	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-		return fmt.Errorf("output: %s, error: %s", out, err)
-	}
-	return i.ndkNotConfigured("")
-}
-
 func (i installer) target(version string) error {
-	log.Warnf("Missing platform version found: %s", version)
+	logger.Warnf("Missing platform version found: %s", version)
 
 	version = "android-" + version
 	platformComponent := sdkcomponent.Platform{
 		Version: version,
 	}
 	cmd := i.sdkManager.InstallCommand(platformComponent)
-	cmd.SetStdin(strings.NewReader("y"))
 
-	log.Printf("Installing platform version using:")
-	log.Printf("$ %s", cmd.PrintableCommandArgs())
+	logger.Printf("Installing platform version using:")
+	logger.Printf("$ %s", cmd.PrintableCommandArgs())
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -223,17 +178,16 @@ func (i installer) target(version string) error {
 }
 
 func (i installer) buildTool(buildToolsVersion string) error {
-	log.Warnf("Missing build tools version found: %s", buildToolsVersion)
+	logger.Warnf("Missing build tools version found: %s", buildToolsVersion)
 
 	buildToolsComponent := sdkcomponent.BuildTool{
 		Version: buildToolsVersion,
 	}
 
 	cmd := i.sdkManager.InstallCommand(buildToolsComponent)
-	cmd.SetStdin(strings.NewReader("y"))
 
-	log.Printf("Installing build tools version using:")
-	log.Printf("$ %s", cmd.PrintableCommandArgs())
+	logger.Printf("Installing build tools version using:")
+	logger.Printf("$ %s", cmd.PrintableCommandArgs())
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -243,7 +197,7 @@ func (i installer) buildTool(buildToolsVersion string) error {
 }
 
 func (i installer) extrasLib(lib string) error {
-	log.Warnf("Missing extras library found: %s", lib)
+	logger.Warnf("Missing extras library found: %s", lib)
 
 	firstColon := strings.Index(lib, ":")
 	lib = strings.Replace(lib[:firstColon], ".", ";", -1) + strings.Replace(lib[firstColon:], ":", ";", -1)
@@ -255,10 +209,9 @@ func (i installer) extrasLib(lib string) error {
 	})
 	for _, e := range extrasComponents {
 		cmd := i.sdkManager.InstallCommand(e)
-		cmd.SetStdin(strings.NewReader("y"))
 
-		log.Printf("Installing extras using:")
-		log.Printf("$ %s", cmd.PrintableCommandArgs())
+		logger.Printf("Installing extras using:")
+		logger.Printf("$ %s", cmd.PrintableCommandArgs())
 
 		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
