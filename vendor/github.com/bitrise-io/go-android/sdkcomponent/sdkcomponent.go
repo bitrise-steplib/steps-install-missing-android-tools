@@ -182,11 +182,11 @@ type Extras struct {
 // GooglePlayServicesInstallComponents ...
 func GooglePlayServicesInstallComponents() []Extras {
 	return []Extras{
-		Extras{
+		{
 			Provider:    "google",
 			PackageName: "m2repository",
 		},
-		Extras{
+		{
 			Provider:    "google",
 			PackageName: "google_play_services",
 		},
@@ -196,11 +196,11 @@ func GooglePlayServicesInstallComponents() []Extras {
 // LegacyGooglePlayServicesInstallComponents ...
 func LegacyGooglePlayServicesInstallComponents() []Extras {
 	return []Extras{
-		Extras{
+		{
 			Provider:    "google",
 			PackageName: "m2repository",
 		},
-		Extras{
+		{
 			Provider:    "google",
 			PackageName: "google_play_services",
 		},
@@ -210,21 +210,17 @@ func LegacyGooglePlayServicesInstallComponents() []Extras {
 // SupportLibraryInstallComponents ...
 func SupportLibraryInstallComponents() []Extras {
 	return []Extras{
-		Extras{
+		{
 			Provider:    "android",
 			PackageName: "m2repository",
 		},
-		// Extras{
-		// 	Provider:    "android",
-		// 	PackageName: "support",
-		// },
 	}
 }
 
 // LegacySupportLibraryInstallComponents ...
 func LegacySupportLibraryInstallComponents() []Extras {
 	return []Extras{
-		Extras{
+		{
 			Provider:    "android",
 			PackageName: "m2repository",
 		},
@@ -257,4 +253,30 @@ func (component Extras) InstallPathInAndroidHome() string {
 // InstallationIndicatorFile ...
 func (component Extras) InstallationIndicatorFile() string {
 	return ""
+}
+
+// NDK ...
+type NDK struct {
+	Version string
+}
+
+// GetSDKStylePath ...
+func (component NDK) GetSDKStylePath() string {
+	return fmt.Sprintf("ndk;%s", component.Version)
+}
+
+// GetLegacySDKStylePath ...
+func (component NDK) GetLegacySDKStylePath() string {
+	// Not relevant anymore
+	return ""
+}
+
+// InstallPathInAndroidHome ...
+func (component NDK) InstallPathInAndroidHome() string {
+	return filepath.Join("ndk", component.Version)
+}
+
+// InstallationIndicatorFile ...
+func (component NDK) InstallationIndicatorFile() string {
+	return "source.properties"
 }

@@ -1,21 +1,20 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/bitrise-io/go-android/sdk"
+	"github.com/bitrise-io/go-android/sdkcomponent"
+	"github.com/bitrise-io/go-android/sdkmanager"
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
 	"github.com/hashicorp/go-version"
 )
@@ -27,21 +26,19 @@ type Config struct {
 	GradlewPath    string `env:"gradlew_path,file"`
 	AndroidHome    string `env:"ANDROID_HOME"`
 	AndroidSDKRoot string `env:"ANDROID_SDK_ROOT"`
-	NDKRevision    string `env:"ndk_revision"`
+	NDKVersion     string `env:"ndk_version"`
 }
 
 var logger = log.NewLogger()
+var cmdFactory = command.NewFactory(env.NewRepository())
 
 func failf(format string, v ...interface{}) {
 	logger.Errorf(format, v...)
 	os.Exit(1)
 }
 
-func ndkDownloadURL(revision string) string {
-	return fmt.Sprintf("https://dl.google.com/android/repository/android-ndk-r%s-%s-x86_64.zip", revision, runtime.GOOS)
-}
-
-func ndkRevision(ndkPath string) string {
+// ndkVersion returns the full version string of a given install path
+func ndkVersion(ndkPath string) string {
 	propertiesPath := filepath.Join(ndkPath, "source.properties")
 
 	content, err := fileutil.ReadStringFromFile(propertiesPath)
@@ -53,12 +50,7 @@ func ndkRevision(ndkPath string) string {
 		if strings.Contains(strings.ToLower(line), "pkg.revision") {
 			lineParts := strings.Split(line, "=")
 			if len(lineParts) == 2 {
-				revision := strings.TrimSpace(lineParts[1])
-				version, err := version.NewVersion(revision)
-				if err != nil {
-					return ""
-				}
-				return fmt.Sprintf("%d", version.Segments()[0])
+				return strings.TrimSpace(lineParts[1])
 			}
 		}
 	}
@@ -83,64 +75,42 @@ func currentNDKHome() string {
 	return "ndk-bundle"
 }
 
-func newNDKHome() (string, error) {
-	if v := os.Getenv("ANDROID_HOME"); v != "" {
-		// $ANDROID_HOME is deprecated
-		return filepath.Join(v, "ndk-bundle"), nil
-	}
-	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
-		// $ANDROID_SDK_ROOT is preferred over $ANDROID_HOME
-		return filepath.Join(v, "ndk-bundle"), nil
-	}
-	return "", errors.New("neither $ANDROID_HOME nor $ANDROID_SDK_ROOT is specified")
-}
-
-// updateNDK downloads and extracts the required NDK revision (if not already installed to the correct location).
-// NDK is installed to the `ndk-bundle` subdirectory of the SDK location, while updating $ANDROID_NDK_HOME for
+// updateNDK installs the requested NDK version (if not already installed to the correct location).
+// NDK is installed to the `ndk/version` subdirectory of the SDK location, while updating $ANDROID_NDK_HOME for
 // compatibility with older Android Gradle Plugin versions.
 // Details: https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
-func updateNDK(revision string) error {
-	ndkDownloadURL := ndkDownloadURL(revision)
+func updateNDK(version string, androidSdk *sdk.Model) error {
 	currentNdkHome := currentNDKHome()
 
-	currentRevision := ndkRevision(currentNdkHome)
-	if currentRevision == revision {
-		logger.Donef("NDK r%s already installed at %s", revision, currentNdkHome)
+	currentVersion := ndkVersion(currentNdkHome)
+	if currentVersion == version {
+		logger.Donef("NDK %s already installed at %s", version, currentNdkHome)
 		return nil
 	}
 
-	if currentRevision != "" {
-		logger.Printf("NDK version %s found at: %s", currentRevision, currentNdkHome)
+	if currentVersion != "" {
+		logger.Printf("NDK %s found at: %s", currentVersion, currentNdkHome)
 	}
 
-	logger.Printf("Removing NDK...")
+	logger.Printf("Removing existing NDK...")
 	if err := os.RemoveAll(currentNdkHome); err != nil {
 		return err
 	}
 	logger.Printf("Done")
 
-	logger.Printf("Downloading NDK r%s...", revision)
-	newNDKHome, err := newNDKHome()
+	logger.Printf("Installing NDK %s with sdkmanager", version)
+	sdkManager, err := sdkmanager.New(androidSdk, cmdFactory)
 	if err != nil {
 		return err
 	}
-	// The NDK archive contents are wrapped in an extra subdirectory, so we unzip to the parent directory,
-	// then rename the subdirectory to ndk-bundle
-	newNDKHomeParentDir := filepath.Dir(newNDKHome)
-	if err := pathutil.EnsureDirExist(newNDKHomeParentDir); err != nil {
+	ndkComponent := sdkcomponent.NDK{Version: version}
+	cmd := sdkManager.InstallCommand(ndkComponent)
+	output, err := cmd.RunAndReturnTrimmedOutput()
+	if err != nil {
+		logger.Errorf(output)
 		return err
 	}
-	if err := command.DownloadAndUnZIP(ndkDownloadURL, newNDKHomeParentDir); err != nil {
-		return err
-	}
-
-	unzippedDirName := fmt.Sprintf("android-ndk-r%s", revision)
-	if err := os.RemoveAll(newNDKHome); err != nil {
-		return err
-	}
-	if err := os.Rename(filepath.Join(newNDKHomeParentDir, unzippedDirName), newNDKHome); err != nil {
-		return err
-	}
+	newNDKHome := filepath.Join(androidSdk.GetAndroidHome(), ndkComponent.InstallPathInAndroidHome())
 
 	logger.Printf("Done")
 
@@ -177,12 +147,28 @@ func main() {
 		failf("Failed to set executable permission for gradlew, error: %s", err)
 	}
 
+	// Initialize Android SDK
 	fmt.Println()
-	if config.NDKRevision != "" {
-		logger.Infof("Installing NDK bundle")
+	logger.Infof("Initialize Android SDK")
+	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
+		AndroidHome:    config.AndroidHome,
+		AndroidSDKRoot: config.AndroidSDKRoot,
+	})
+	if err != nil {
+		failf("Failed to initialize Android SDK: %s", err)
+	}
 
-		if err := updateNDK(config.NDKRevision); err != nil {
-			failf("Failed to download NDK bundle, error: %s", err)
+	fmt.Println()
+	if config.NDKVersion != "" {
+		logger.Infof("Installing Android NDK")
+
+		_, err := version.NewVersion(config.NDKVersion)
+		if err != nil {
+			failf(fmt.Sprintf("'%s' is not a valid NDK version. This should be the full version number, such as 23.0.7599858. To see all available versions, run 'sdkmanager --list'", config.NDKVersion))
+		}
+
+		if err := updateNDK(config.NDKVersion, androidSdk); err != nil {
+			failf("Failed to install new NDK package, error: %s", err)
 		}
 	} else {
 		logger.Infof("Clearing NDK environment")
@@ -195,17 +181,6 @@ func main() {
 		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ""); err != nil {
 			failf("Failed to set environment variable, error: %s", err)
 		}
-	}
-
-	// Initialize Android SDK
-	fmt.Println()
-	logger.Infof("Initialize Android SDK")
-	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
-		AndroidHome:    config.AndroidHome,
-		AndroidSDKRoot: config.AndroidSDKRoot,
-	})
-	if err != nil {
-		failf("Failed to initialize Android SDK: %s", err)
 	}
 
 	// Ensure android licences

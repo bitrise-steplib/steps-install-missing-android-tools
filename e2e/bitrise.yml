@@ -40,7 +40,7 @@ workflows:
     - path::./:
         title: Execute step
         inputs:
-          - ndk_revision: 21
+          - ndk_version: 21.1.6352462
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug
@@ -58,17 +58,17 @@ workflows:
     - path::./:
         title: Execute step without NDK version
         inputs:
-        - ndk_revision: ""
+        - ndk_version: ""
     - path::./:
         title: Execute step with NDK r18
         inputs:
-        - ndk_revision: 18
+        - ndk_version: 18.1.5063045
     - script:
         title: Check installed NDK version
         inputs:
         - content: |-
-            EXPECTED_VERSION=18.0.5002713
-            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            EXPECTED_VERSION=18.1.5063045
+            NDK_VERSION=`cat $ANDROID_HOME/ndk/18.1.5063045/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
             if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
               echo "Unexpected installed NDK version: $NDK_VERSION"
               echo "Expected: $EXPECTED_VERSION"
@@ -79,13 +79,13 @@ workflows:
     - path::./:
         title: Execute step again with NDK r18
         inputs:
-        - ndk_revision: 18
+        - ndk_version: 18.1.5063045
     - script:
         title: Check installed NDK version
         inputs:
         - content: |-
-            EXPECTED_VERSION=18.0.5002713
-            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            EXPECTED_VERSION=18.1.5063045
+            NDK_VERSION=`cat $ANDROID_HOME/ndk/18.1.5063045/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
             if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
               echo "Unexpected installed NDK version: $NDK_VERSION"
               echo "Expected: $EXPECTED_VERSION"
@@ -96,13 +96,13 @@ workflows:
     - path::./:
         title: Execute step with NDK r17
         inputs:
-        - ndk_revision: 17
+        - ndk_version: 17.2.4988734
     - script:
         title: Check installed NDK version
         inputs:
         - content: |-
-            EXPECTED_VERSION=17.0.4754217
-            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            EXPECTED_VERSION=17.2.4988734
+            NDK_VERSION=`cat $ANDROID_HOME/ndk/17.2.4988734/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
             if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
               echo "Unexpected installed NDK version: $NDK_VERSION"
               echo "Expected: $EXPECTED_VERSION"
@@ -114,13 +114,13 @@ workflows:
         title: Execute step with NDK r22
         description: NDK r22 doesn't contain the platforms dir anymore
         inputs:
-        - ndk_revision: 22
+        - ndk_version: 22.1.7171670
     - script:
         title: Check installed NDK version
         inputs:
         - content: |-
-            EXPECTED_VERSION=22.0.7026061
-            NDK_VERSION=`cat $ANDROID_HOME/ndk-bundle/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            EXPECTED_VERSION=22.1.7171670
+            NDK_VERSION=`cat $ANDROID_HOME/ndk/22.1.7171670/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
             if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
               echo "Unexpected installed NDK version: $NDK_VERSION"
               echo "Expected: $EXPECTED_VERSION"

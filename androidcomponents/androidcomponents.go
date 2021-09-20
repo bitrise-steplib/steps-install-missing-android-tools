@@ -217,7 +217,6 @@ func (i installer) extrasLib(lib string) error {
 		if err != nil {
 			return fmt.Errorf("output: %s, error: %s", out, err)
 		}
-		return nil
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-# github.com/bitrise-io/go-android v0.0.0-20210913110142-e16d773393da
+# github.com/bitrise-io/go-android v0.0.0-20210913151943-e1ea0b4df36d
 ## explicit
 github.com/bitrise-io/go-android/sdk
 github.com/bitrise-io/go-android/sdkcomponent
