@@ -128,6 +128,23 @@ workflows:
             else
               echo "NDK version is correct: $NDK_VERSION"
             fi
+    - path::./:
+        title: Execute step with NDK r23
+        inputs:
+        - ndk_version: 23.0.7599858
+    - script:
+        title: Check installed NDK version
+        inputs:
+        - content: |-
+            EXPECTED_VERSION=23.0.7599858
+            NDK_VERSION=`cat $ANDROID_HOME/ndk/23.0.7599858/source.properties | grep Pkg.Revision | cut -d'=' -f2 | cut -d' ' -f2`
+            if [ $NDK_VERSION != $EXPECTED_VERSION ]; then
+              echo "Unexpected installed NDK version: $NDK_VERSION"
+              echo "Expected: $EXPECTED_VERSION"
+              exit 1
+            else
+              echo "NDK version is correct: $NDK_VERSION"
+            fi
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug
