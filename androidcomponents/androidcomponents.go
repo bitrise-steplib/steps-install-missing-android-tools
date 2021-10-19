@@ -146,7 +146,6 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 					logger.Printf(out)
 					return callbackErr
 				}
-				err = nil
 				return i.scanDependencies(append(foundMatches, matches[1])...)
 			}
 		}
