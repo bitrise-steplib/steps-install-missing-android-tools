@@ -1,11 +1,11 @@
 title: Install missing Android SDK components
-summary: Install Android SDK components that are required for the app.  
+summary: Install Android SDK components that are required for the app.
 
 description: |-
 
-  This Step makes sure that required Android SDK components (platforms and build-tools) are installed. To do so, the Step runs the `gradlew dependencies` command. 
-  
-  If the Android Plugin for Gradle version is 2.2.0 or higher, the plugin will download and install the missing components during the Gradle command.  
+  This Step makes sure that required Android SDK components (platforms and build-tools) are installed. To do so, the Step runs the `gradlew dependencies` command.
+
+  If the Android Plugin for Gradle version is 2.2.0 or higher, the plugin will download and install the missing components during the Gradle command.
   Otherwise the command fails and the Step parses the command's output to determine which SDK components are missing and installs them.
 
   ### Configuring the Step
@@ -32,33 +32,33 @@ website: https://github.com/bitrise-steplib/steps-install-missing-android-tools
 source_code_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools
 support_url: https://github.com/bitrise-steplib/steps-install-missing-android-tools/issues
 project_type_tags:
-  - android
-  - cordova
-  - ionic
-  - react-native
+- android
+- cordova
+- ionic
+- react-native
 type_tags:
-  - installer
+- installer
 is_always_run: false
 is_skippable: false
 toolkit:
   go:
     package_name: github.com/bitrise-steplib/steps-install-missing-android-tools
 inputs:
-  - gradlew_path: $GRADLEW_PATH
-    opts:
-      title: gradlew file path
-      description: |
-        Using a Gradle Wrapper (gradlew) is required, as the wrapper is what makes sure
-        that the right Gradle version is installed and used for the build.
-        __You can find more information about the Gradle Wrapper (gradlew),
-        and about how you can generate one (if you would not have one already)__
-        in the official guide at: [https://docs.gradle.org/current/userguide/gradle_wrapper.html](https://docs.gradle.org/current/userguide/gradle_wrapper.html).
+- gradlew_path: $GRADLEW_PATH
+  opts:
+    title: gradlew file path
+    description: |
+      Using a Gradle Wrapper (gradlew) is required, as the wrapper is what makes sure
+      that the right Gradle version is installed and used for the build.
+      __You can find more information about the Gradle Wrapper (gradlew),
+      and about how you can generate one (if you would not have one already)__
+      in the official guide at: [https://docs.gradle.org/current/userguide/gradle_wrapper.html](https://docs.gradle.org/current/userguide/gradle_wrapper.html).
 
-        **The path should be relative** to the repository root, for example: `./gradlew`,
-        or if it's in a sub directory: `./sub/dir/gradlew`.
-      is_required: true
-  - ndk_version:
-    opts:
-      title: NDK version
-      summary: "NDK version to install. Leave this input empty if you are not using the Native Development Kit in your project."
-      description: "NDK version to install, for example `23.0.7599858`. Run `sdkmanager --list` on your machine to see all available versions. Leave this input empty if you are not using the Native Development Kit in your project."
+      **The path should be relative** to the repository root, for example: `./gradlew`,
+      or if it's in a sub directory: `./sub/dir/gradlew`.
+    is_required: true
+- ndk_version:
+  opts:
+    title: NDK version
+    summary: NDK version to install. Leave this input empty if you are not using the Native Development Kit in your project.
+    description: NDK version to install, for example `23.0.7599858`. Run `sdkmanager --list` on your machine to see all available versions. Leave this input empty if you are not using the Native Development Kit in your project.
