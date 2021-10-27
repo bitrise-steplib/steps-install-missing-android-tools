@@ -40,7 +40,7 @@ workflows:
     - path::./:
         title: Execute step
         inputs:
-        - ndk_version: 21.1.6352462
+        - ndk_version: 23.1.7779620
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug
