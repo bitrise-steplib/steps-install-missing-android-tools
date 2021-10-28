@@ -14,13 +14,15 @@ workflows:
     - _setup
     steps:
     - script:
+        title: Remove ndk-bundle
         inputs:
         - content: |-
             #!/usr/bin/env bash
             set -ex
-            rm -rf $ANDROID_HOME/ndk-bundle
+            mv $ANDROID_HOME/ndk-bundle $ANDROID_HOME/ndk-bundle-original
     after_run:
     - _run_and_build
+    - _restore_ndk_bundle
 
   test_react_native:
     envs:
@@ -190,22 +192,6 @@ workflows:
   _setup:
     steps:
     - script:
-        run_if: $.IsCI
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -ex
-            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-              sudo update-alternatives --set javac /usr/lib/jvm/java-11-openjdk-amd64/bin/javac
-              sudo update-alternatives --set java /usr/lib/jvm/java-11-openjdk-amd64/bin/java
-              export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
-              envman add --key JAVA_HOME --value "/usr/lib/jvm/java-11-openjdk-amd64"
-            elif [[ "$OSTYPE" == "darwin"* ]]; then
-              jenv global 11
-              export JAVA_HOME="$(jenv prefix)"
-              envman add --key JAVA_HOME --value "$(jenv prefix)"
-            fi
-    - script:
         title: Clean _tmp dir
         inputs:
         - content: |-
@@ -241,3 +227,13 @@ workflows:
             set -ex
             rm -rf $ANDROID_HOME/build-tools
             mv $ANDROID_HOME/build-tools-original $ANDROID_HOME/build-tools
+  _restore_ndk_bundle:
+    steps:
+    - script:
+        title: Restore preinstalled ndk-bundle
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            rm -rf $ANDROID_HOME/ndk-bundle
+            mv $ANDROID_HOME/ndk-bundle-original $ANDROID_HOME/ndk-bundle
