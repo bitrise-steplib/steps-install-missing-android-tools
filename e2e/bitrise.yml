@@ -19,7 +19,7 @@ workflows:
         - content: |-
             #!/usr/bin/env bash
             set -ex
-            [ -f $ANDROID_HOME/ndk-bundle ] && mv $ANDROID_HOME/ndk-bundle $ANDROID_HOME/ndk-bundle-original
+            [ -d $ANDROID_HOME/ndk-bundle ] && mv $ANDROID_HOME/ndk-bundle $ANDROID_HOME/ndk-bundle-original
     after_run:
     - _run_and_build
     - _restore_ndk_bundle
@@ -236,4 +236,4 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             rm -rf $ANDROID_HOME/ndk-bundle
-            [ -f $ANDROID_HOME/ndk-bundle-original ] && mv $ANDROID_HOME/ndk-bundle-original $ANDROID_HOME/ndk-bundle
+            [ -d $ANDROID_HOME/ndk-bundle-original ] && mv $ANDROID_HOME/ndk-bundle-original $ANDROID_HOME/ndk-bundle
