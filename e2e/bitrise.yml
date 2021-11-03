@@ -43,6 +43,10 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             yarn
+    - path::./:
+        title: Execute step
+        inputs:
+        - ndk_version: 21.1.6352462
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug
