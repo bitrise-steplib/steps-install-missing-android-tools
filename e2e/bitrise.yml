@@ -264,7 +264,7 @@ workflows:
             #!/usr/bin/env bash
             set -ex
 
-            cp $ANDROID_HOME/ndk-bundle $ANDROID_HOME/ndk-bundle-original
+            cp -R $ANDROID_HOME/ndk-bundle $ANDROID_HOME/ndk-bundle-original
 
   _restore_ndk_bundle:
     steps:
