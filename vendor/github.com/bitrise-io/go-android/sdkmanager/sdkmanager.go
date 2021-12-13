@@ -16,11 +16,10 @@ type Model struct {
 	androidHome string
 	legacy      bool
 	binPth      string
-	cmdFactory  command.Factory
 }
 
 // New ...
-func New(sdk sdk.AndroidSdkInterface, cmdFactory command.Factory) (*Model, error) {
+func New(sdk sdk.AndroidSdkInterface) (*Model, error) {
 	cmdlineToolsPath, err := sdk.CmdlineToolsPath()
 	if err != nil {
 		return nil, err
@@ -33,7 +32,6 @@ func New(sdk sdk.AndroidSdkInterface, cmdFactory command.Factory) (*Model, error
 		return &Model{
 			androidHome: sdk.GetAndroidHome(),
 			binPth:      sdkmanagerPath,
-			cmdFactory:  cmdFactory,
 		}, nil
 	}
 
@@ -45,7 +43,6 @@ func New(sdk sdk.AndroidSdkInterface, cmdFactory command.Factory) (*Model, error
 			androidHome: sdk.GetAndroidHome(),
 			legacy:      true,
 			binPth:      legacySdkmanagerPath,
-			cmdFactory:  cmdFactory,
 		}, nil
 	}
 
@@ -70,13 +67,11 @@ func (model Model) IsInstalled(component sdkcomponent.Model) (bool, error) {
 }
 
 // InstallCommand ...
-func (model Model) InstallCommand(component sdkcomponent.Model) command.Command {
+func (model Model) InstallCommand(component sdkcomponent.Model) *command.Model {
 	if model.legacy {
-		args := []string{"update", "sdk", "--no-ui", "--all", "--filter", component.GetLegacySDKStylePath()}
-		return model.cmdFactory.Create(model.binPth, args, nil)
+		return command.New(model.binPth, "update", "sdk", "--no-ui", "--all", "--filter", component.GetLegacySDKStylePath())
 	}
-	cmdOpts := command.Opts{
-		Stdin: strings.NewReader("y"), // Accept license if prompted
-	}
-	return model.cmdFactory.Create(model.binPth, []string{component.GetSDKStylePath()}, &cmdOpts)
+	cmd := command.New(model.binPth, component.GetSDKStylePath())
+	cmd.SetStdin(strings.NewReader("y"))
+	return cmd
 }
