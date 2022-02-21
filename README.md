@@ -8,16 +8,16 @@ Install Android SDK components that are required for the app.
 <summary>Description</summary>
 
 
-This Step makes sure that the required Android SDK components (platforms and build-tools) are installed. To do so, the Step runs the `gradlew dependencies` command. 
+This Step makes sure that required Android SDK components (platforms and build-tools) are installed. To do so, the Step runs the `gradlew dependencies` command.
 
-If the Android Plugin for Gradle version is 2.2.0 or higher, the plugin will automatically download and install the missing components during the Gradle command.  
-Otherwise the command will fail and the Step parses the command's output to determine which SDK components are missing and installs them.
+If the Android Plugin for Gradle version is 2.2.0 or higher, the plugin will download and install the missing components during the Gradle command.
+Otherwise the command fails and the Step parses the command's output to determine which SDK components are missing and installs them.
 
 ### Configuring the Step
 
 1. Set the path of the `gradlew` file.
 
-   The default value is of the $PROJECT_LOCATION Environment Variable.
+   The default value is that of the $PROJECT_LOCATION Environment Variable.
 
 1. If you use an Android NDK in your app, set its revision in the **NDK Revision** input.
 
@@ -35,11 +35,11 @@ If the Step fails, check that your repo actually contains a `gradlew` file. With
 * [Install React Native](https://www.bitrise.io/integrations/steps/install-react-native)
 </details>
 
-## 🧩To Get started
+## 🧩 Get started
 
 Add this step directly to your workflow in the [Bitrise Workflow Editor](https://devcenter.bitrise.io/steps-and-workflows/steps-and-workflows-index/).
 
-You could also run this step directly with [Bitrise CLI](https://github.com/bitrise-io/bitrise).
+You can also run this step directly with [Bitrise CLI](https://github.com/bitrise-io/bitrise).
 
 ## ⚙️ Configuration
 
