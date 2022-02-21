@@ -127,7 +127,7 @@ func main() {
 	// Input validation
 	var config Config
 	if err := stepconf.Parse(&config); err != nil {
-		log.Errorf("process config: %s", err)
+		failf("process config: %s", err)
 	}
 
 	fmt.Println()
