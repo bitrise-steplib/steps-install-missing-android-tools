@@ -127,7 +127,7 @@ func main() {
 	// Input validation
 	var config Config
 	if err := stepconf.Parse(&config); err != nil {
-		log.Errorf("%s", err)
+		failf("Process config: %s", err)
 	}
 
 	fmt.Println()
@@ -139,7 +139,7 @@ func main() {
 	// Set executable permission for gradlew
 	log.Printf("Set executable permission for gradlew")
 	if err := os.Chmod(config.GradlewPath, 0770); err != nil {
-		failf("Failed to set executable permission for gradlew, error: %s", err)
+		failf("Run: failed to set executable permission for gradlew, error: %s", err)
 	}
 
 	// Initialize Android SDK
@@ -150,7 +150,7 @@ func main() {
 		AndroidSDKRoot: config.AndroidSDKRoot,
 	})
 	if err != nil {
-		failf("Failed to initialize Android SDK: %s", err)
+		failf("Run: failed to initialize Android SDK: %s", err)
 	}
 
 	fmt.Println()
@@ -159,22 +159,22 @@ func main() {
 
 		_, err := version.NewVersion(config.NDKVersion)
 		if err != nil {
-			failf(fmt.Sprintf("'%s' is not a valid NDK version. This should be the full version number, such as 23.0.7599858. To see all available versions, run 'sdkmanager --list'", config.NDKVersion))
+			failf(fmt.Sprintf("Run: '%s' is not a valid NDK version. This should be the full version number, such as 23.0.7599858. To see all available versions, run 'sdkmanager --list'", config.NDKVersion))
 		}
 
 		if err := updateNDK(config.NDKVersion, androidSdk); err != nil {
-			failf("Failed to install new NDK package, error: %s", err)
+			failf("Run: failed to install new NDK package, error: %s", err)
 		}
 	} else {
 		log.Infof("Clearing NDK environment")
 		log.Printf("Unset ANDROID_NDK_HOME")
 
 		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
-			failf("Failed to unset environment variable, error: %s", err)
+			failf("Run: failed to unset environment variable, error: %s", err)
 		}
 
 		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ""); err != nil {
-			failf("Failed to set environment variable, error: %s", err)
+			failf("Run: failed to set environment variable, error: %s", err)
 		}
 	}
 
@@ -182,7 +182,7 @@ func main() {
 	log.Printf("Ensure android licences")
 
 	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
-		failf("Failed to ensure android licences, error: %s", err)
+		failf("Run: failed to ensure android licences, error: %s", err)
 	}
 
 	// Ensure required Android SDK components
@@ -190,7 +190,7 @@ func main() {
 	log.Infof("Ensure required Android SDK components")
 
 	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath); err != nil {
-		failf("Failed to ensure android components, error: %s", err)
+		failf("Run: failed to ensure android components, error: %s", err)
 	}
 
 	fmt.Println()
