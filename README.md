@@ -50,6 +50,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | --- | --- | --- | --- |
 | `gradlew_path` | Using a Gradle Wrapper (gradlew) is required, as the wrapper is what makes sure that the right Gradle version is installed and used for the build. __You can find more information about the Gradle Wrapper (gradlew), and about how you can generate one (if you would not have one already)__ in the official guide at: [https://docs.gradle.org/current/userguide/gradle_wrapper.html](https://docs.gradle.org/current/userguide/gradle_wrapper.html).  **The path should be relative** to the repository root, for example: `./gradlew`, or if it's in a sub directory: `./sub/dir/gradlew`.  | required | `$GRADLEW_PATH` |
 | `ndk_version` | NDK version to install, for example `23.0.7599858`. Run `sdkmanager --list` on your machine to see all available versions. Leave this input empty if you are not using the Native Development Kit in your project. |  |  |
+| `gradlew_dependencies_options` | Additional options to be added to the executed gradlew tasks command.  The step runs `gradlew dependencies --stacktrace` to list the missing dependencies and to install them. Additional options will be appended to the end of this command.  Example: `--configuration-cache-problems=warn`. |  |  |
 </details>
 
 <details>
