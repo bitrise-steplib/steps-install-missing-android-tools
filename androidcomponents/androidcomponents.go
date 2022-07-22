@@ -22,9 +22,10 @@ import (
 )
 
 type installer struct {
-	androidSDK  *sdk.Model
-	sdkManager  *sdkmanager.Model
-	gradlewPath string
+	androidSDK                 *sdk.Model
+	sdkManager                 *sdkmanager.Model
+	gradlewPath                string
+	gradlewDependenciesOptions []string
 }
 
 // InstallLicences ...
@@ -84,15 +85,16 @@ func InstallLicences(androidSdk *sdk.Model) error {
 }
 
 // Ensure ...
-func Ensure(androidSdk *sdk.Model, gradlewPath string) error {
+func Ensure(androidSdk *sdk.Model, gradlewPath string, gradlewDependenciesOptions []string) error {
 	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		return err
 	}
 	i := installer{
-		androidSdk,
-		sdkManager,
-		gradlewPath,
+		androidSDK:                 androidSdk,
+		sdkManager:                 sdkManager,
+		gradlewPath:                gradlewPath,
+		gradlewDependenciesOptions: gradlewDependenciesOptions,
 	}
 
 	return retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
@@ -112,15 +114,18 @@ func (i installer) getDependencyCases() map[string]func(match string) error {
 	}
 }
 
-func getDependenciesOutput(projectLocation string) (string, error) {
-	gradleCmd := command.New("./gradlew", "dependencies", "--stacktrace")
+func getDependenciesOutput(projectLocation string, options []string) (string, error) {
+	args := []string{"dependencies", "--stacktrace"}
+	args = append(args, options...)
+
+	gradleCmd := command.New("./gradlew", args...)
 	gradleCmd.SetStdin(strings.NewReader("y"))
 	gradleCmd.SetDir(projectLocation)
 	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
 }
 
 func (i installer) scanDependencies(foundMatches ...string) error {
-	out, err := getDependenciesOutput(filepath.Dir(i.gradlewPath))
+	out, err := getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
 	if err == nil {
 		return nil
 	}

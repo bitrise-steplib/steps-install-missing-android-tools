@@ -40,6 +40,8 @@ workflows:
         - branch: master
     - path::./:
         title: Execute step
+        inputs:
+        - gradlew_dependencies_options: --configuration-cache-problems=warn
     - gradle-runner:
         inputs:
         - gradle_task: assembleDebug

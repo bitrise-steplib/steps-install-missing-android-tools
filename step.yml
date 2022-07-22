@@ -62,3 +62,15 @@ inputs:
     title: NDK version
     summary: NDK version to install. Leave this input empty if you are not using the Native Development Kit in your project.
     description: NDK version to install, for example `23.0.7599858`. Run `sdkmanager --list` on your machine to see all available versions. Leave this input empty if you are not using the Native Development Kit in your project.
+- gradlew_dependencies_options:
+  opts:
+    title: Additional options for the gradlew tasks command
+    summary: Additional options to be added to the executed gradlew tasks command.
+    description: |-
+      Additional options to be added to the executed gradlew tasks command.
+
+      The step runs `gradlew dependencies --stacktrace` to list the missing dependencies and to install them.
+      Additional options will be appended to the end of this command.
+
+      Example: `--configuration-cache-problems=warn`.
+
