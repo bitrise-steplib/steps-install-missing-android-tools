@@ -73,4 +73,3 @@ inputs:
       Additional options will be appended to the end of this command.
 
       Example: `--configuration-cache-problems=warn`.
-
