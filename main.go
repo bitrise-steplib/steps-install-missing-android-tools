@@ -15,16 +15,18 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
 	"github.com/hashicorp/go-version"
+	"github.com/kballard/go-shellquote"
 )
 
 const androidNDKHome = "ANDROID_NDK_HOME"
 
 // Config ...
 type Config struct {
-	GradlewPath    string `env:"gradlew_path,file"`
-	AndroidHome    string `env:"ANDROID_HOME"`
-	AndroidSDKRoot string `env:"ANDROID_SDK_ROOT"`
-	NDKVersion     string `env:"ndk_version"`
+	GradlewPath                string `env:"gradlew_path,file"`
+	AndroidHome                string `env:"ANDROID_HOME"`
+	AndroidSDKRoot             string `env:"ANDROID_SDK_ROOT"`
+	NDKVersion                 string `env:"ndk_version"`
+	GradlewDependenciesOptions string `env:"gradlew_dependencies_options"`
 }
 
 func failf(format string, v ...interface{}) {
@@ -129,6 +131,10 @@ func main() {
 	if err := stepconf.Parse(&config); err != nil {
 		failf("Process config: %s", err)
 	}
+	gradlewDependenciesOptions, err := shellquote.Split(config.GradlewDependenciesOptions)
+	if err != nil {
+		failf("provided gradlew_dependencies_options (%s) are not valid CLI parameters: %s", config.GradlewDependenciesOptions, err)
+	}
 
 	fmt.Println()
 	stepconf.Print(config)
@@ -189,7 +195,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Ensure required Android SDK components")
 
-	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath); err != nil {
+	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath, gradlewDependenciesOptions); err != nil {
 		failf("Run: failed to ensure android components, error: %s", err)
 	}
 
