@@ -19,6 +19,8 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	commandv2 "github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
 )
 
 type installer struct {
@@ -117,6 +119,14 @@ func (i installer) getDependencyCases() map[string]func(match string) error {
 func getDependenciesOutput(projectLocation string, options []string) (string, error) {
 	args := []string{"dependencies", "--stacktrace"}
 	args = append(args, options...)
+	name := "./gradlew"
+
+	cmdFactory := commandv2.NewFactory(env.NewRepository())
+	cmdFactory.Create(name, args, &commandv2.Opts{
+		Stdin:       strings.NewReader("y"),
+		Dir:         projectLocation,
+		ErrorFinder: nil,
+	})
 
 	gradleCmd := command.New("./gradlew", args...)
 	gradleCmd.SetStdin(strings.NewReader("y"))
