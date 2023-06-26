@@ -3,7 +3,9 @@ package androidcomponents
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -118,18 +120,36 @@ func getDependenciesOutput(projectLocation string, options []string) (string, er
 	args := []string{"dependencies", "--stacktrace"}
 	args = append(args, options...)
 
+	combinedOutBuf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+
+	var outWriter io.Writer
+	outWriter = combinedOutBuf
+
+	var errWriter io.Writer
+	errWriter = io.MultiWriter(combinedOutBuf, errBuf)
+
 	gradleCmd := command.New("./gradlew", args...)
 	gradleCmd.SetStdin(strings.NewReader("y"))
 	gradleCmd.SetDir(projectLocation)
-	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
+	gradleCmd.SetStdout(outWriter)
+	gradleCmd.SetStderr(errWriter)
+	err := gradleCmd.Run()
+	out := combinedOutBuf.String()
+
+	return out, NewCommandError(gradleCmd.PrintableCommandArgs(), err, errBuf.String())
 }
 
 func (i installer) scanDependencies(foundMatches ...string) error {
-	out, err := getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
-	if err == nil {
+	out, getDependenciesErr := getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
+	if getDependenciesErr == nil {
 		return nil
 	}
-	err = fmt.Errorf("output: %s\nerror: %s", out, err)
+	var commandExecutionError *CommandExecutionError
+	if errors.As(getDependenciesErr, commandExecutionError) {
+		return commandExecutionError
+	}
+
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -151,7 +171,8 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 		log.Printf(out)
 		return scanner.Err()
 	}
-	return err
+
+	return getDependenciesErr
 }
 
 func (i installer) target(version string) error {
