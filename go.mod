@@ -8,4 +8,5 @@ require (
 	github.com/bitrise-io/go-utils v1.0.1
 	github.com/hashicorp/go-version v1.3.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+	github.com/stretchr/testify v1.8.4
 )

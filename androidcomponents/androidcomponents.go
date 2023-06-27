@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -136,8 +137,10 @@ func getDependenciesOutput(projectLocation string, options []string) (string, er
 	gradleCmd.SetStderr(errWriter)
 	err := gradleCmd.Run()
 	out := combinedOutBuf.String()
-
-	return out, NewCommandError(gradleCmd.PrintableCommandArgs(), err, errBuf.String())
+	if err != nil {
+		return out, NewCommandError(gradleCmd.PrintableCommandArgs(), err, errBuf.String())
+	}
+	return "", nil
 }
 
 func (i installer) scanDependencies(foundMatches ...string) error {
@@ -145,9 +148,9 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 	if getDependenciesErr == nil {
 		return nil
 	}
-	var commandExecutionError *CommandExecutionError
-	if errors.As(getDependenciesErr, commandExecutionError) {
-		return commandExecutionError
+	var exitErr *exec.ExitError
+	if !errors.As(getDependenciesErr, &exitErr) {
+		return getDependenciesErr
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(out))
