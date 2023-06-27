@@ -93,7 +93,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 	// Set executable permission for gradlew
 	log.Printf("Set executable permission for gradlew")
 	if err := os.Chmod(config.GradlewPath, 0770); err != nil {
-		return fmt.Errorf("failed to set executable permission for gradlew, error: %s", err)
+		return fmt.Errorf("failed to set executable permission for gradlew: %w", err)
 	}
 
 	// Initialize Android SDK
@@ -104,7 +104,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 		AndroidSDKRoot: config.AndroidSDKRoot,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to initialize Android SDK: %s", err)
+		return fmt.Errorf("failed to initialize Android SDK: %w", err)
 	}
 
 	fmt.Println()
@@ -117,18 +117,18 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 		}
 
 		if err := updateNDK(config.NDKVersion, androidSdk); err != nil {
-			return fmt.Errorf("failed to install new NDK package, error: %s", err)
+			return fmt.Errorf("failed to install new NDK package: %w", err)
 		}
 	} else {
 		log.Infof("Clearing NDK environment")
 		log.Printf("Unset ANDROID_NDK_HOME")
 
 		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
-			return fmt.Errorf("failed to unset environment variable, error: %s", err)
+			return fmt.Errorf("failed to unset environment variable: %w", err)
 		}
 
 		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ""); err != nil {
-			return fmt.Errorf("failed to set environment variable, error: %s", err)
+			return fmt.Errorf("failed to set environment variable: %w", err)
 		}
 	}
 
@@ -136,7 +136,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 	log.Printf("Ensure android licences")
 
 	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
-		return fmt.Errorf("failed to ensure android licences, error: %s", err)
+		return fmt.Errorf("failed to ensure android licences: %w", err)
 	}
 
 	// Ensure required Android SDK components
@@ -144,7 +144,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 	log.Infof("Ensure required Android SDK components")
 
 	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath, config.GradlewDependenciesOptions); err != nil {
-		return fmt.Errorf("failed to ensure android components, error: %s", err)
+		return fmt.Errorf("failed to install missing android components: %w", err)
 	}
 
 	fmt.Println()
