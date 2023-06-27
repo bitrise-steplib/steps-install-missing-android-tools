@@ -18,11 +18,15 @@ github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
+# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.19
+## explicit
+github.com/bitrise-io/go-utils/v2/errorutil
+github.com/bitrise-io/go-utils/v2/exitcode
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/hashicorp/go-cleanhttp v0.5.2
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-retryablehttp v0.7.0
+# github.com/hashicorp/go-retryablehttp v0.7.1
 github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/go-version v1.3.0
 ## explicit
