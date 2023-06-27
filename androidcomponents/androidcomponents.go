@@ -124,11 +124,8 @@ func getDependenciesOutput(projectLocation string, options []string) (string, er
 	combinedOutBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 
-	var outWriter io.Writer
-	outWriter = combinedOutBuf
-
-	var errWriter io.Writer
-	errWriter = io.MultiWriter(combinedOutBuf, errBuf)
+	outWriter := combinedOutBuf
+	errWriter := io.MultiWriter(combinedOutBuf, errBuf)
 
 	gradleCmd := command.New("./gradlew", args...)
 	gradleCmd.SetStdin(strings.NewReader("y"))
