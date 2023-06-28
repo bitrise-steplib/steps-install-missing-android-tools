@@ -28,7 +28,7 @@ workflows:
   test_react_native:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/Bitrise-React-Native-Sample.git
-    - BRANCH: master
+    - BRANCH: upgrade
     - GRADLE_BUILD_FILE_PATH: android/build.gradle
     - GRADLEW_PATH: android/gradlew
     before_run:
