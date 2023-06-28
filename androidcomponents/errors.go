@@ -49,8 +49,7 @@ type CommandExitError struct {
 }
 
 func (e CommandExitError) Error() string {
-	suggestion := errors.New("check the command's output for details")
-	return fmt.Sprintf("command failed with exit status %d (%s): %s", e.err.ExitCode(), e.cmd, suggestion)
+	return fmt.Sprintf("command failed with exit status %d (%s): check the command's output for details", e.err.ExitCode(), e.cmd)
 }
 
 func (e CommandExitError) Unwrap() error {
