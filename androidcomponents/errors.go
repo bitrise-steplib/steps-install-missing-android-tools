@@ -9,58 +9,26 @@ import (
 func NewCommandError(cmd string, err error, reason string) error {
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
-		commandExitErr := CommandExitError{
-			cmd: cmd,
-			err: exitErr,
-		}
-
 		if len(reason) == 0 {
-			return commandExitErr
+			return newCommandExitError(cmd, exitErr)
 		}
 
-		return CommandExitErrorWithReason{
-			CommandExitError: commandExitErr,
-			reason:           reason,
-		}
-
+		return newCommandExitErrorWithReason(cmd, exitErr, reason)
 	}
-	return CommandExecutionError{
-		cmd: cmd,
-		err: err,
-	}
+
+	return newCommandExecutionError(cmd, err)
 }
 
-type CommandExecutionError struct {
-	cmd string
-	err error
+func newCommandExecutionError(cmd string, err error) error {
+	return fmt.Errorf("executing command failed (%s): %w", cmd, err)
 }
 
-func (e CommandExecutionError) Error() string {
-	return fmt.Sprintf("executing command failed (%s): %s", e.cmd, e.err)
+func newCommandExitError(cmd string, err *exec.ExitError) error {
+	suggestion := errors.New("check the command's output for details")
+	return fmt.Errorf("command failed with exit status %d (%s): %w", err.ExitCode(), cmd, suggestion)
 }
 
-func (e CommandExecutionError) Unwrap() error {
-	return e.err
-}
-
-type CommandExitError struct {
-	cmd string
-	err *exec.ExitError
-}
-
-func (e CommandExitError) Error() string {
-	return fmt.Sprintf("command failed with exit status %d (%s): check the command's output for details", e.err.ExitCode(), e.cmd)
-}
-
-func (e CommandExitError) Unwrap() error {
-	return e.err
-}
-
-type CommandExitErrorWithReason struct {
-	CommandExitError
-	reason string
-}
-
-func (e CommandExitErrorWithReason) Error() string {
-	return fmt.Sprintf("command failed with exit status %d (%s): %s", e.err.ExitCode(), e.cmd, e.reason)
+func newCommandExitErrorWithReason(cmd string, err *exec.ExitError, reasonStr string) error {
+	reason := errors.New(reasonStr)
+	return fmt.Errorf("command failed with exit status %d (%s): %w", err.ExitCode(), cmd, reason)
 }
