@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/bitrise-io/go-utils/v2/env"
 
 	"github.com/bitrise-io/go-android/sdk"
 	"github.com/bitrise-io/go-android/sdkcomponent"
@@ -22,6 +23,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	commandv2 "github.com/bitrise-io/go-utils/v2/command"
 )
 
 type installer struct {
@@ -29,6 +31,8 @@ type installer struct {
 	sdkManager                 *sdkmanager.Model
 	gradlewPath                string
 	gradlewDependenciesOptions []string
+
+	factory commandv2.Factory
 }
 
 // InstallLicences ...
@@ -98,6 +102,7 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string, gradlewDependenciesOption
 		sdkManager:                 sdkManager,
 		gradlewPath:                gradlewPath,
 		gradlewDependenciesOptions: gradlewDependenciesOptions,
+		factory:                    commandv2.NewFactory(env.NewRepository()),
 	}
 
 	return retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
@@ -117,7 +122,7 @@ func (i installer) getDependencyCases() map[string]func(match string) error {
 	}
 }
 
-func getDependenciesOutput(projectLocation string, options []string) (string, error) {
+func (i installer) getDependenciesOutput(projectLocation string, options []string) (string, error) {
 	args := []string{"dependencies", "--stacktrace"}
 	args = append(args, options...)
 
@@ -127,11 +132,12 @@ func getDependenciesOutput(projectLocation string, options []string) (string, er
 	outWriter := combinedOutBuf
 	errWriter := io.MultiWriter(combinedOutBuf, errBuf)
 
-	gradleCmd := command.New("./gradlew", args...)
-	gradleCmd.SetStdin(strings.NewReader("y"))
-	gradleCmd.SetDir(projectLocation)
-	gradleCmd.SetStdout(outWriter)
-	gradleCmd.SetStderr(errWriter)
+	gradleCmd := i.factory.Create("./gradlew", args, &commandv2.Opts{
+		Stdout: outWriter,
+		Stderr: errWriter,
+		Stdin:  strings.NewReader("y"),
+		Dir:    projectLocation,
+	})
 	err := gradleCmd.Run()
 	out := combinedOutBuf.String()
 	if err != nil {
@@ -141,12 +147,12 @@ func getDependenciesOutput(projectLocation string, options []string) (string, er
 }
 
 func (i installer) scanDependencies(foundMatches ...string) error {
-	out, getDependenciesErr := getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
+	out, getDependenciesErr := i.getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
 	if getDependenciesErr == nil {
 		return nil
 	}
-	var exitErr *exec.ExitError
-	if !errors.As(getDependenciesErr, &exitErr) {
+	var executionErr CommandExecutionError
+	if errors.As(getDependenciesErr, &executionErr) {
 		return getDependenciesErr
 	}
 
@@ -170,6 +176,11 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 	if scanner.Err() != nil {
 		log.Printf(out)
 		return scanner.Err()
+	}
+
+	var exitErr CommandExitError
+	if !errors.As(getDependenciesErr, &exitErr) {
+		log.Printf(out)
 	}
 
 	return getDependenciesErr
