@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-utils/v2/env"
-
 	"github.com/bitrise-io/go-android/sdk"
 	"github.com/bitrise-io/go-android/sdkcomponent"
 	"github.com/bitrise-io/go-android/sdkmanager"
@@ -24,6 +22,8 @@ import (
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	commandv2 "github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	logv2 "github.com/bitrise-io/go-utils/v2/log"
 )
 
 type installer struct {
@@ -33,6 +33,7 @@ type installer struct {
 	gradlewDependenciesOptions []string
 
 	factory commandv2.Factory
+	logger  logv2.Logger
 }
 
 // InstallLicences ...
@@ -102,14 +103,17 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string, gradlewDependenciesOption
 		sdkManager:                 sdkManager,
 		gradlewPath:                gradlewPath,
 		gradlewDependenciesOptions: gradlewDependenciesOptions,
-		factory:                    commandv2.NewFactory(env.NewRepository()),
+
+		factory: commandv2.NewFactory(env.NewRepository()),
+		logger:  logv2.NewLogger(),
 	}
 
-	return retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+	retryNum := uint(1)
+	return retry.Times(retryNum).Wait(time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.Warnf("Retrying...")
 		}
-		return i.scanDependencies()
+		return i.scanDependencies(attempt == retryNum)
 	})
 }
 
@@ -126,27 +130,24 @@ func (i installer) getDependenciesOutput(projectLocation string, options []strin
 	args := []string{"dependencies", "--stacktrace"}
 	args = append(args, options...)
 
-	combinedOutBuf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-
-	outWriter := combinedOutBuf
-	errWriter := io.MultiWriter(combinedOutBuf, errBuf)
+	var outBuffer bytes.Buffer
+	var errBuffer bytes.Buffer
 
 	gradleCmd := i.factory.Create("./gradlew", args, &commandv2.Opts{
-		Stdout: outWriter,
-		Stderr: errWriter,
+		Stdout: &outBuffer,
+		Stderr: io.MultiWriter(&errBuffer, &outBuffer),
 		Stdin:  strings.NewReader("y"),
 		Dir:    projectLocation,
 	})
 	err := gradleCmd.Run()
-	out := combinedOutBuf.String()
+	out := outBuffer.String()
 	if err != nil {
-		return out, NewCommandError(gradleCmd.PrintableCommandArgs(), err, errBuf.String())
+		return out, NewCommandError(gradleCmd.PrintableCommandArgs(), err, errBuffer.String())
 	}
 	return "", nil
 }
 
-func (i installer) scanDependencies(foundMatches ...string) error {
+func (i installer) scanDependencies(isLastAttempt bool, foundMatches ...string) error {
 	out, getDependenciesErr := i.getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
 	if getDependenciesErr == nil {
 		return nil
@@ -169,18 +170,22 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 					log.Printf(out)
 					return callbackErr
 				}
-				return i.scanDependencies(append(foundMatches, matches[1])...)
+				return i.scanDependencies(isLastAttempt, append(foundMatches, matches[1])...)
 			}
 		}
 	}
 	if scanner.Err() != nil {
-		log.Printf(out)
+		if isLastAttempt {
+			log.Printf(out)
+		}
 		return scanner.Err()
 	}
 
-	var exitErr CommandExitError
-	if !errors.As(getDependenciesErr, &exitErr) {
-		log.Printf(out)
+	if isLastAttempt {
+		var exitErr CommandExitError
+		if errors.As(getDependenciesErr, &exitErr) {
+			i.logger.Printf(out)
+		}
 	}
 
 	return getDependenciesErr

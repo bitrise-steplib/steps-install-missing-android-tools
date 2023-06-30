@@ -14,8 +14,8 @@ func NewCommandError(cmd string, err error, reason string) error {
 		}
 
 		return NewCommandExitErrorWithReason(cmd, exitErr, reason)
-
 	}
+
 	return NewCommandExecutionError(cmd, err)
 }
 
