@@ -18,9 +18,19 @@ github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
+# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.14.0.20221208123037-ab31edd851e5
+## explicit
+github.com/bitrise-io/go-utils/v2/command
+github.com/bitrise-io/go-utils/v2/env
+github.com/bitrise-io/go-utils/v2/errorutil
+github.com/bitrise-io/go-utils/v2/exitcode
+github.com/bitrise-io/go-utils/v2/log
+github.com/bitrise-io/go-utils/v2/log/colorstring
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/hashicorp/go-cleanhttp v0.5.2
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-retryablehttp v0.7.0
+# github.com/hashicorp/go-retryablehttp v0.7.1
 github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/go-version v1.3.0
 ## explicit
@@ -28,3 +38,14 @@ github.com/hashicorp/go-version
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 ## explicit
 github.com/kballard/go-shellquote
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/objx v0.5.0
+github.com/stretchr/objx
+# github.com/stretchr/testify v1.8.4
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/mock
+github.com/stretchr/testify/require
+# gopkg.in/yaml.v3 v3.0.1
+gopkg.in/yaml.v3

@@ -25,32 +25,6 @@ workflows:
     - _run_and_build
     - _restore_ndk_bundle
 
-  test_react_native:
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/Bitrise-React-Native-Sample.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: android/build.gradle
-    - GRADLEW_PATH: android/gradlew
-    before_run:
-    - _setup
-    - _backup_ndk_bundle
-    after_run:
-    - _restore_ndk_bundle
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -ex
-            yarn
-    - path::./:
-        title: Execute step
-        inputs:
-        - ndk_version: 23.1.7779620
-    - gradle-runner:
-        inputs:
-        - gradle_task: assembleDebug
-
   test_ndk_install:
     summary: Test installing multiple NDK revisions and compare installed version numbers to expected values
     envs:

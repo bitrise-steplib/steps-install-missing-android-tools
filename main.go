@@ -13,6 +13,8 @@ import (
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/errorutil"
+	. "github.com/bitrise-io/go-utils/v2/exitcode"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
 	"github.com/hashicorp/go-version"
 	"github.com/kballard/go-shellquote"
@@ -20,8 +22,7 @@ import (
 
 const androidNDKHome = "ANDROID_NDK_HOME"
 
-// Config ...
-type Config struct {
+type Inputs struct {
 	GradlewPath                string `env:"gradlew_path,file"`
 	AndroidHome                string `env:"ANDROID_HOME"`
 	AndroidSDKRoot             string `env:"ANDROID_SDK_ROOT"`
@@ -29,9 +30,127 @@ type Config struct {
 	GradlewDependenciesOptions string `env:"gradlew_dependencies_options"`
 }
 
-func failf(format string, v ...interface{}) {
-	log.Errorf(format, v...)
-	os.Exit(1)
+type Config struct {
+	GradlewPath                string
+	AndroidHome                string
+	AndroidSDKRoot             string
+	NDKVersion                 string
+	GradlewDependenciesOptions []string
+}
+
+func main() {
+	exitCode := run()
+	os.Exit(int(exitCode))
+}
+
+func run() ExitCode {
+	androidToolsInstaller := AndroidToolsInstaller{}
+	config, err := androidToolsInstaller.ProcessInputs()
+	if err != nil {
+		log.Errorf(errorutil.FormattedError(fmt.Errorf("Failed to process Step inputs: %w", err)))
+		return Failure
+	}
+
+	if err := androidToolsInstaller.Run(config); err != nil {
+		log.Errorf(errorutil.FormattedError(fmt.Errorf("Failed to execute Step: %w", err)))
+		return Failure
+	}
+
+	return Success
+}
+
+type AndroidToolsInstaller struct {
+}
+
+func (i AndroidToolsInstaller) ProcessInputs() (Config, error) {
+	var inputs Inputs
+	if err := stepconf.Parse(&inputs); err != nil {
+		return Config{}, err
+	}
+	gradlewDependenciesOptions, err := shellquote.Split(inputs.GradlewDependenciesOptions)
+	if err != nil {
+		return Config{}, fmt.Errorf("provided gradlew_dependencies_options (%s) are not valid CLI parameters: %s", inputs.GradlewDependenciesOptions, err)
+	}
+
+	config := Config{
+		GradlewPath:                inputs.GradlewPath,
+		AndroidHome:                inputs.AndroidHome,
+		AndroidSDKRoot:             inputs.AndroidSDKRoot,
+		NDKVersion:                 inputs.NDKVersion,
+		GradlewDependenciesOptions: gradlewDependenciesOptions,
+	}
+
+	fmt.Println()
+	stepconf.Print(config)
+
+	return config, nil
+}
+
+func (i AndroidToolsInstaller) Run(config Config) error {
+	fmt.Println()
+	log.Infof("Preparation")
+
+	// Set executable permission for gradlew
+	log.Printf("Set executable permission for gradlew")
+	if err := os.Chmod(config.GradlewPath, 0770); err != nil {
+		return fmt.Errorf("failed to set executable permission for gradlew: %w", err)
+	}
+
+	// Initialize Android SDK
+	fmt.Println()
+	log.Infof("Initialize Android SDK")
+	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
+		AndroidHome:    config.AndroidHome,
+		AndroidSDKRoot: config.AndroidSDKRoot,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize Android SDK: %w", err)
+	}
+
+	fmt.Println()
+	if config.NDKVersion != "" {
+		log.Infof("Installing Android NDK")
+
+		_, err := version.NewVersion(config.NDKVersion)
+		if err != nil {
+			return fmt.Errorf("'%s' is not a valid NDK version. This should be the full version number, such as 23.0.7599858. To see all available versions, run 'sdkmanager --list'", config.NDKVersion)
+		}
+
+		if err := updateNDK(config.NDKVersion, androidSdk); err != nil {
+			return fmt.Errorf("failed to install new NDK package: %w", err)
+		}
+	} else {
+		log.Infof("Clearing NDK environment")
+		log.Printf("Unset ANDROID_NDK_HOME")
+
+		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
+			return fmt.Errorf("failed to unset environment variable: %w", err)
+		}
+
+		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ""); err != nil {
+			return fmt.Errorf("failed to set environment variable: %w", err)
+		}
+	}
+
+	// Ensure android licences
+	log.Printf("Ensure android licences")
+
+	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
+		return fmt.Errorf("failed to ensure android licences: %w", err)
+	}
+
+	// Ensure required Android SDK components
+	fmt.Println()
+	log.Infof("Ensure required Android SDK components")
+
+	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath, config.GradlewDependenciesOptions); err != nil {
+		return fmt.Errorf("failed to install missing android components: %w", err)
+	}
+
+	fmt.Println()
+	log.Donef("Required SDK components are installed")
+
+	return nil
 }
 
 // ndkVersion returns the full version string of a given install path
@@ -123,82 +242,4 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 	log.Printf("Exported $%s: %s", androidNDKHome, newNDKHome)
 
 	return nil
-}
-
-func main() {
-	// Input validation
-	var config Config
-	if err := stepconf.Parse(&config); err != nil {
-		failf("Process config: %s", err)
-	}
-	gradlewDependenciesOptions, err := shellquote.Split(config.GradlewDependenciesOptions)
-	if err != nil {
-		failf("provided gradlew_dependencies_options (%s) are not valid CLI parameters: %s", config.GradlewDependenciesOptions, err)
-	}
-
-	fmt.Println()
-	stepconf.Print(config)
-
-	fmt.Println()
-	log.Infof("Preparation")
-
-	// Set executable permission for gradlew
-	log.Printf("Set executable permission for gradlew")
-	if err := os.Chmod(config.GradlewPath, 0770); err != nil {
-		failf("Run: failed to set executable permission for gradlew, error: %s", err)
-	}
-
-	// Initialize Android SDK
-	fmt.Println()
-	log.Infof("Initialize Android SDK")
-	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
-		AndroidHome:    config.AndroidHome,
-		AndroidSDKRoot: config.AndroidSDKRoot,
-	})
-	if err != nil {
-		failf("Run: failed to initialize Android SDK: %s", err)
-	}
-
-	fmt.Println()
-	if config.NDKVersion != "" {
-		log.Infof("Installing Android NDK")
-
-		_, err := version.NewVersion(config.NDKVersion)
-		if err != nil {
-			failf(fmt.Sprintf("Run: '%s' is not a valid NDK version. This should be the full version number, such as 23.0.7599858. To see all available versions, run 'sdkmanager --list'", config.NDKVersion))
-		}
-
-		if err := updateNDK(config.NDKVersion, androidSdk); err != nil {
-			failf("Run: failed to install new NDK package, error: %s", err)
-		}
-	} else {
-		log.Infof("Clearing NDK environment")
-		log.Printf("Unset ANDROID_NDK_HOME")
-
-		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
-			failf("Run: failed to unset environment variable, error: %s", err)
-		}
-
-		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ""); err != nil {
-			failf("Run: failed to set environment variable, error: %s", err)
-		}
-	}
-
-	// Ensure android licences
-	log.Printf("Ensure android licences")
-
-	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
-		failf("Run: failed to ensure android licences, error: %s", err)
-	}
-
-	// Ensure required Android SDK components
-	fmt.Println()
-	log.Infof("Ensure required Android SDK components")
-
-	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath, gradlewDependenciesOptions); err != nil {
-		failf("Run: failed to ensure android components, error: %s", err)
-	}
-
-	fmt.Println()
-	log.Donef("Required SDK components are installed")
 }

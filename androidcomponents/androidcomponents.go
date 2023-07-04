@@ -3,7 +3,9 @@ package androidcomponents
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,6 +21,9 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	commandv2 "github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	logv2 "github.com/bitrise-io/go-utils/v2/log"
 )
 
 type installer struct {
@@ -26,6 +31,9 @@ type installer struct {
 	sdkManager                 *sdkmanager.Model
 	gradlewPath                string
 	gradlewDependenciesOptions []string
+
+	factory commandv2.Factory
+	logger  logv2.Logger
 }
 
 // InstallLicences ...
@@ -95,13 +103,17 @@ func Ensure(androidSdk *sdk.Model, gradlewPath string, gradlewDependenciesOption
 		sdkManager:                 sdkManager,
 		gradlewPath:                gradlewPath,
 		gradlewDependenciesOptions: gradlewDependenciesOptions,
+
+		factory: commandv2.NewFactory(env.NewRepository()),
+		logger:  logv2.NewLogger(),
 	}
 
-	return retry.Times(1).Wait(time.Second).Try(func(attempt uint) error {
+	retryNum := uint(1)
+	return retry.Times(retryNum).Wait(time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.Warnf("Retrying...")
 		}
-		return i.scanDependencies()
+		return i.scanDependencies(attempt == retryNum)
 	})
 }
 
@@ -114,22 +126,37 @@ func (i installer) getDependencyCases() map[string]func(match string) error {
 	}
 }
 
-func getDependenciesOutput(projectLocation string, options []string) (string, error) {
+func (i installer) getDependenciesOutput(projectLocation string, options []string) (string, error) {
 	args := []string{"dependencies", "--stacktrace"}
 	args = append(args, options...)
 
-	gradleCmd := command.New("./gradlew", args...)
-	gradleCmd.SetStdin(strings.NewReader("y"))
-	gradleCmd.SetDir(projectLocation)
-	return gradleCmd.RunAndReturnTrimmedCombinedOutput()
+	var outBuffer bytes.Buffer
+	var errBuffer bytes.Buffer
+
+	gradleCmd := i.factory.Create("./gradlew", args, &commandv2.Opts{
+		Stdout: &outBuffer,
+		Stderr: io.MultiWriter(&errBuffer, &outBuffer),
+		Stdin:  strings.NewReader("y"),
+		Dir:    projectLocation,
+	})
+	err := gradleCmd.Run()
+	out := outBuffer.String()
+	if err != nil {
+		return out, NewCommandError(gradleCmd.PrintableCommandArgs(), err, errBuffer.String())
+	}
+	return "", nil
 }
 
-func (i installer) scanDependencies(foundMatches ...string) error {
-	out, err := getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
-	if err == nil {
+func (i installer) scanDependencies(isLastAttempt bool, foundMatches ...string) error {
+	out, getDependenciesErr := i.getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
+	if getDependenciesErr == nil {
 		return nil
 	}
-	err = fmt.Errorf("output: %s\nerror: %s", out, err)
+	var executionErr CommandExecutionError
+	if errors.As(getDependenciesErr, &executionErr) {
+		return getDependenciesErr
+	}
+
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -143,15 +170,25 @@ func (i installer) scanDependencies(foundMatches ...string) error {
 					log.Printf(out)
 					return callbackErr
 				}
-				return i.scanDependencies(append(foundMatches, matches[1])...)
+				return i.scanDependencies(isLastAttempt, append(foundMatches, matches[1])...)
 			}
 		}
 	}
 	if scanner.Err() != nil {
-		log.Printf(out)
+		if isLastAttempt {
+			log.Printf(out)
+		}
 		return scanner.Err()
 	}
-	return err
+
+	if isLastAttempt {
+		var exitErr CommandExitError
+		if errors.As(getDependenciesErr, &exitErr) {
+			i.logger.Printf(out)
+		}
+	}
+
+	return getDependenciesErr
 }
 
 func (i installer) target(version string) error {
