@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,8 +14,10 @@ import (
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/errorutil"
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
+	"github.com/bitrise-io/go-utils/v2/log/colorstring"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
 	"github.com/hashicorp/go-version"
 	"github.com/kballard/go-shellquote"
@@ -173,19 +176,36 @@ func ndkVersion(ndkPath string) string {
 	return ""
 }
 
-func currentNDKHome() string {
-	if v := os.Getenv(androidNDKHome); v != "" {
+// https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
+// https://developer.android.com/tools/variables
+func currentNDKHome(envRepo env.Repository, sys fs.FS, requestedNDKVersion string) string {
+	if v := envRepo.Get(androidNDKHome); v != "" {
+		// $ANDROID_NDK_HOME is old and AGP no longer takes it into account,
+		// but it's an explicit path, so use it if it's set on the system.
 		return v
 	}
-	if v := os.Getenv("ANDROID_HOME"); v != "" {
-		// $ANDROID_HOME is deprecated
+	if androidHome := envRepo.Get("ANDROID_HOME"); androidHome != "" {
+		// The most modern way is to install NDK versions side-by-side at $ANDROID_HOME/ndk/version
+		// This is what `sdkmanager` does when installing a specific version (`sdkmanager "ndk;26.3.11579264"`).
+		ndkPath := filepath.Join(androidHome, "ndk", requestedNDKVersion)
+		_, err := fs.Stat(sys, ndkPath)
+		if err == nil {
+			return ndkPath
+		}
+
+		// $ANDROID_HOME/ndk-bundle is deprecated, it's the non-side-by-side install location
+		// installed by `sdkmanager ndk-bundle`
+		ndkBundlePath := filepath.Join(androidHome, "ndk-bundle")
+		_, err = fs.Stat(sys, ndkBundlePath)
+		if err != nil {
+			return ndkBundlePath
+		}
+	}
+	if v := envRepo.Get("ANDROID_SDK_ROOT"); v != "" {
+		// $ANDROID_SDK_ROOT is deprecated, so it's lower in priority than $ANDROID_HOME
 		return filepath.Join(v, "ndk-bundle")
 	}
-	if v := os.Getenv("ANDROID_SDK_ROOT"); v != "" {
-		// $ANDROID_SDK_ROOT is preferred over $ANDROID_HOME
-		return filepath.Join(v, "ndk-bundle")
-	}
-	if v := os.Getenv("HOME"); v != "" {
+	if v := envRepo.Get("HOME"); v != "" {
 		return filepath.Join(v, "ndk-bundle")
 	}
 	return "ndk-bundle"
@@ -196,16 +216,17 @@ func currentNDKHome() string {
 // compatibility with older Android Gradle Plugin versions.
 // Details: https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 func updateNDK(version string, androidSdk *sdk.Model) error {
-	currentNdkHome := currentNDKHome()
+	envRepo := env.NewRepository()
+	currentNdkHome := currentNDKHome(envRepo, os.DirFS("/"), version)
 
 	currentVersion := ndkVersion(currentNdkHome)
 	if currentVersion == version {
-		log.Donef("NDK %s already installed at %s", version, currentNdkHome)
+		log.Donef("NDK %s already installed at %s", colorstring.Green(version), currentNdkHome)
 		return nil
 	}
 
 	if currentVersion != "" {
-		log.Printf("NDK %s found at: %s", currentVersion, currentNdkHome)
+		log.Printf("NDK %s found at: %s", colorstring.Cyan(currentVersion), currentNdkHome)
 	}
 
 	log.Printf("Removing existing NDK...")

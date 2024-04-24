@@ -238,6 +238,10 @@ workflows:
             #!/usr/bin/env bash
             set -ex
 
+            # If there is no ndk-bundle (only side-by-side NDKs), we don't need to back it up
+            if [ ! -d $ANDROID_HOME/ndk-bundle ]; then
+              exit 0
+            fi
             cp -R $ANDROID_HOME/ndk-bundle $ANDROID_HOME/ndk-bundle-original
 
   _restore_ndk_bundle:
