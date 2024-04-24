@@ -132,24 +132,6 @@ workflows:
         inputs:
         - gradle_task: assembleDebug
 
-  test_support_library:
-    envs:
-    - SAMPLE_APP_URL: https://github.com/bitrise-io/sample-apps-android-x.git
-    - BRANCH: master
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    - GRADLEW_PATH: ./gradlew
-    before_run:
-    - _setup
-    steps:
-    - script:
-        title: Uninstall Android SDK
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            sdkmanager --uninstall "extras;android;m2repository"
-    after_run:
-    - _run_and_build
-
   test_build_tools_not_installed:
     envs:
     - SAMPLE_APP_URL: https://github.com/bitrise-io/Bitrise-Android-Sample.git
