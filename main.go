@@ -120,14 +120,14 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 		}
 
 		if err := updateNDK(config.NDKVersion, androidSdk); err != nil {
-			return fmt.Errorf("failed to install new NDK package: %w", err)
+			return fmt.Errorf("install new NDK package: %w", err)
 		}
 	} else {
 		log.Infof("Clearing NDK environment")
 		log.Printf("Unset ANDROID_NDK_HOME")
 
 		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
-			return fmt.Errorf("failed to unset environment variable: %w", err)
+			return fmt.Errorf("unset environment variable: %w", err)
 		}
 
 		if err := tools.ExportEnvironmentWithEnvman("ANDROID_NDK_HOME", ""); err != nil {
@@ -235,17 +235,17 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 	}
 	log.Printf("Done")
 
-	log.Printf("Installing NDK %s with sdkmanager", version)
+	log.Printf("Installing NDK %s with sdkmanager", colorstring.Cyan(version))
 	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		return err
 	}
 	ndkComponent := sdkcomponent.NDK{Version: version}
 	cmd := sdkManager.InstallCommand(ndkComponent)
-	output, err := cmd.RunAndReturnTrimmedOutput()
+	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		log.Errorf(output)
-		return err
+		return fmt.Errorf("run %s: %w", cmd.PrintableCommandArgs(), err)
 	}
 	newNDKHome := filepath.Join(androidSdk.GetAndroidHome(), ndkComponent.InstallPathInAndroidHome())
 
