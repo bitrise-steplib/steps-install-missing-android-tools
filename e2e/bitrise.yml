@@ -193,7 +193,7 @@ workflows:
         - branch: $BRANCH
     - set-java-version:
         inputs:
-        - java_version: "17"
+        - set_java_version: "17"
 
   _run_and_build:
     steps:
