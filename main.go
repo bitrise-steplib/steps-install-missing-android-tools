@@ -190,9 +190,10 @@ func targetNDKPath(envRepo env.Repository, sys fs.FS, requestedNDKVersion string
 		ndkPath := filepath.Join(androidHome, "ndk", requestedNDKVersion)
 		return ndkPath, false
 	}
-	if v := envRepo.Get("ANDROID_SDK_ROOT"); v != "" {
+	if sdkRoot := envRepo.Get("ANDROID_SDK_ROOT"); sdkRoot != "" {
 		// $ANDROID_SDK_ROOT is deprecated, so it's lower in priority than $ANDROID_HOME
-		return filepath.Join(v, "ndk-bundle"), true
+		ndkPath := filepath.Join(sdkRoot, "ndk", requestedNDKVersion)
+		return ndkPath, false
 	}
 	if v := envRepo.Get("HOME"); v != "" {
 		return filepath.Join(v, "ndk-bundle"), true
@@ -207,15 +208,15 @@ func targetNDKPath(envRepo env.Repository, sys fs.FS, requestedNDKVersion string
 func updateNDK(version string, androidSdk *sdk.Model) error {
 	envRepo := env.NewRepository()
 	targetNDKPath, doCleanup := targetNDKPath(envRepo, os.DirFS("/"), version)
+	currentVersionAtPath := ndkVersion(targetNDKPath)
+	log.Printf("NDK %s found at: %s", colorstring.Cyan(currentVersionAtPath), targetNDKPath)
 
-	currentVersion := ndkVersion(targetNDKPath)
-	if currentVersion == version {
-		log.Donef("NDK %s already installed at %s", colorstring.Green(version), targetNDKPath)
+	if currentVersionAtPath == version {
+		log.Donef("NDK %s already installed at %s", version, targetNDKPath)
 		return nil
 	}
 
-	if currentVersion != "" || doCleanup {
-		log.Printf("NDK %s found at: %s", colorstring.Cyan(currentVersion), targetNDKPath)
+	if currentVersionAtPath != "" || doCleanup {
 		log.Printf("Removing existing NDK...")
 		if err := os.RemoveAll(targetNDKPath); err != nil {
 			return err

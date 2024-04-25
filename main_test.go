@@ -90,6 +90,47 @@ func Test_currentNDKHome(t *testing.T) {
 			wantPath: "home/user/android-sdk/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
+		{
+			name: "both ANDROID_HOME and SDK_ROOT are set, pointing to the same dir",
+			envs: map[string]string{
+				"ANDROID_HOME": "home/user/android-sdk",
+				"SDK_ROOT": "home/user/android-sdk",
+			},
+			fs: fstest.MapFS{
+				"home/user/android-sdk/ndk/22.1.7171670/source.properties": &fstest.MapFile{
+					Data: []byte("Pkg.Revision = 22.1.7171670"),
+				},
+			},
+			wantPath: "home/user/android-sdk/ndk/23.0.7599858",
+			wantCleanup: false,
+		},
+		{
+			name: "both ANDROID_HOME and SDK_ROOT are set, pointing to different dirs",
+			envs: map[string]string{
+				"ANDROID_HOME": "home/user/android-sdk-home",
+				"ANDROID_SDK_ROOT": "home/user/android-sdk-root",
+			},
+			fs: fstest.MapFS{
+				"home/user/android-sdk/ndk/22.1.7171670/source.properties": &fstest.MapFile{
+					Data: []byte("Pkg.Revision = 22.1.7171670"),
+				},
+			},
+			wantPath: "home/user/android-sdk-home/ndk/23.0.7599858",
+			wantCleanup: false,
+		},
+		{
+			name: "only SDK_ROOT is set",
+			envs: map[string]string{
+				"ANDROID_SDK_ROOT": "home/user/android-sdk-root",
+			},
+			fs: fstest.MapFS{
+				"home/user/android-sdk/ndk/22.1.7171670/source.properties": &fstest.MapFile{
+					Data: []byte("Pkg.Revision = 22.1.7171670"),
+				},
+			},
+			wantPath: "home/user/android-sdk-root/ndk/23.0.7599858",
+			wantCleanup: false,
+		},
 	}
 
 	for _, tt := range tests {
