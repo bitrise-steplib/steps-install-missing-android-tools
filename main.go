@@ -178,37 +178,26 @@ func ndkVersion(ndkPath string) string {
 
 // https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 // https://developer.android.com/tools/variables
-func currentNDKHome(envRepo env.Repository, sys fs.FS, requestedNDKVersion string) string {
+func targetNDKPath(envRepo env.Repository, sys fs.FS, requestedNDKVersion string) (string, bool) {
 	if v := envRepo.Get(androidNDKHome); v != "" {
 		// $ANDROID_NDK_HOME is old and AGP no longer takes it into account,
 		// but it's an explicit path, so use it if it's set on the system.
-		return v
+		return v, true
 	}
 	if androidHome := envRepo.Get("ANDROID_HOME"); androidHome != "" {
 		// The most modern way is to install NDK versions side-by-side at $ANDROID_HOME/ndk/version
 		// This is what `sdkmanager` does when installing a specific version (`sdkmanager "ndk;26.3.11579264"`).
 		ndkPath := filepath.Join(androidHome, "ndk", requestedNDKVersion)
-		_, err := fs.Stat(sys, ndkPath)
-		if err == nil {
-			return ndkPath
-		}
-
-		// $ANDROID_HOME/ndk-bundle is deprecated, it's the non-side-by-side install location
-		// installed by `sdkmanager ndk-bundle`
-		ndkBundlePath := filepath.Join(androidHome, "ndk-bundle")
-		_, err = fs.Stat(sys, ndkBundlePath)
-		if err != nil {
-			return ndkBundlePath
-		}
+		return ndkPath, false
 	}
 	if v := envRepo.Get("ANDROID_SDK_ROOT"); v != "" {
 		// $ANDROID_SDK_ROOT is deprecated, so it's lower in priority than $ANDROID_HOME
-		return filepath.Join(v, "ndk-bundle")
+		return filepath.Join(v, "ndk-bundle"), true
 	}
 	if v := envRepo.Get("HOME"); v != "" {
-		return filepath.Join(v, "ndk-bundle")
+		return filepath.Join(v, "ndk-bundle"), true
 	}
-	return "ndk-bundle"
+	return "ndk-bundle", true
 }
 
 // updateNDK installs the requested NDK version (if not already installed to the correct location).
@@ -217,23 +206,22 @@ func currentNDKHome(envRepo env.Repository, sys fs.FS, requestedNDKVersion strin
 // Details: https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 func updateNDK(version string, androidSdk *sdk.Model) error {
 	envRepo := env.NewRepository()
-	currentNdkHome := currentNDKHome(envRepo, os.DirFS("/"), version)
+	targetNDKPath, doCleanup := targetNDKPath(envRepo, os.DirFS("/"), version)
 
-	currentVersion := ndkVersion(currentNdkHome)
+	currentVersion := ndkVersion(targetNDKPath)
 	if currentVersion == version {
-		log.Donef("NDK %s already installed at %s", colorstring.Green(version), currentNdkHome)
+		log.Donef("NDK %s already installed at %s", colorstring.Green(version), targetNDKPath)
 		return nil
 	}
 
-	if currentVersion != "" {
-		log.Printf("NDK %s found at: %s", colorstring.Cyan(currentVersion), currentNdkHome)
+	if currentVersion != "" || doCleanup {
+		log.Printf("NDK %s found at: %s", colorstring.Cyan(currentVersion), targetNDKPath)
+		log.Printf("Removing existing NDK...")
+		if err := os.RemoveAll(targetNDKPath); err != nil {
+			return err
+		}
+		log.Printf("Done")
 	}
-
-	log.Printf("Removing existing NDK...")
-	if err := os.RemoveAll(currentNdkHome); err != nil {
-		return err
-	}
-	log.Printf("Done")
 
 	log.Printf("Installing NDK %s with sdkmanager", colorstring.Cyan(version))
 	sdkManager, err := sdkmanager.New(androidSdk)
