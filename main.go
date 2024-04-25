@@ -182,6 +182,10 @@ func targetNDKPath(envRepo env.Repository, sys fs.FS, requestedNDKVersion string
 	if v := envRepo.Get(androidNDKHome); v != "" {
 		// $ANDROID_NDK_HOME is old and AGP no longer takes it into account,
 		// but it's an explicit path, so use it if it's set on the system.
+		// And because we don't know if it's `ndk-bundle` or a specific side-by-side version,
+		// we return true for cleanup.
+		log.Warnf("$%s is set to %s", androidNDKHome, v)
+		log.Warnf("This variable is deprecated and modern Android Gradle Plugin versions no longer take it into account.")
 		return v, true
 	}
 	if androidHome := envRepo.Get("ANDROID_HOME"); androidHome != "" {
@@ -209,10 +213,14 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 	envRepo := env.NewRepository()
 	targetNDKPath, doCleanup := targetNDKPath(envRepo, os.DirFS("/"), version)
 	currentVersionAtPath := ndkVersion(targetNDKPath)
-	log.Printf("NDK %s found at: %s", colorstring.Cyan(currentVersionAtPath), targetNDKPath)
+	if currentVersionAtPath != "" {
+		log.Printf("NDK %s found at %s", colorstring.Cyan(currentVersionAtPath), targetNDKPath)
+	} else {
+		log.Printf("NDK %s %s found at %s", colorstring.Cyan(version), colorstring.Yellow("not"), targetNDKPath)
+	}
 
 	if currentVersionAtPath == version {
-		log.Donef("NDK %s already installed at %s", version, targetNDKPath)
+		log.Donef("NDK %s is already installed", version)
 		return nil
 	}
 
