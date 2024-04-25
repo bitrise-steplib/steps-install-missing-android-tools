@@ -175,7 +175,8 @@ func ndkVersion(ndkPath string) string {
 	return ""
 }
 
-// targetNDKPath picks the correct path where the requested NDK version should be installed.
+// targetNDKPath picks the correct path where the requested NDK version should be installed,
+// as well as returning if the path needs to be cleaned up before install.
 // There are many (deprecated) ways to install NDK, the logic is based on the following:
 // https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 // https://developer.android.com/tools/variables
