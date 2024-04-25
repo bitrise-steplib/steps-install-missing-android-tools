@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -176,9 +175,11 @@ func ndkVersion(ndkPath string) string {
 	return ""
 }
 
+// targetNDKPath picks the correct path where the requested NDK version should be installed.
+// There are many (deprecated) ways to install NDK, the logic is based on the following:
 // https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 // https://developer.android.com/tools/variables
-func targetNDKPath(envRepo env.Repository, sys fs.FS, requestedNDKVersion string) (string, bool) {
+func targetNDKPath(envRepo env.Repository, requestedNDKVersion string) (string, bool) {
 	if v := envRepo.Get(androidNDKHome); v != "" {
 		// $ANDROID_NDK_HOME is old and AGP no longer takes it into account,
 		// but it's an explicit path, so use it if it's set on the system.
@@ -200,18 +201,16 @@ func targetNDKPath(envRepo env.Repository, sys fs.FS, requestedNDKVersion string
 		return ndkPath, false
 	}
 	if v := envRepo.Get("HOME"); v != "" {
+		// Worst case: just install to home (and later export as $ANDROID_NDK_HOME)
 		return filepath.Join(v, "ndk-bundle"), true
 	}
 	return "ndk-bundle", true
 }
 
 // updateNDK installs the requested NDK version (if not already installed to the correct location).
-// NDK is installed to the `ndk/version` subdirectory of the SDK location, while updating $ANDROID_NDK_HOME for
-// compatibility with older Android Gradle Plugin versions.
-// Details: https://github.com/android/ndk-samples/wiki/Configure-NDK-Path
 func updateNDK(version string, androidSdk *sdk.Model) error {
 	envRepo := env.NewRepository()
-	targetNDKPath, doCleanup := targetNDKPath(envRepo, os.DirFS("/"), version)
+	targetNDKPath, doCleanup := targetNDKPath(envRepo, version)
 	currentVersionAtPath := ndkVersion(targetNDKPath)
 	if currentVersionAtPath != "" {
 		log.Printf("NDK %s found at %s", colorstring.Cyan(currentVersionAtPath), targetNDKPath)
