@@ -144,7 +144,7 @@ func (i installer) getDependenciesOutput(projectLocation string, options []strin
 	if err != nil {
 		return out, NewCommandError(gradleCmd.PrintableCommandArgs(), err, errBuffer.String())
 	}
-	return "", nil
+	return out, nil
 }
 
 func (i installer) scanDependencies(isLastAttempt bool, foundMatches ...string) error {
