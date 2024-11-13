@@ -149,6 +149,8 @@ func (i installer) getDependenciesOutput(projectLocation string, options []strin
 
 func (i installer) scanDependencies(isLastAttempt bool, foundMatches ...string) error {
 	out, getDependenciesErr := i.getDependenciesOutput(filepath.Dir(i.gradlewPath), i.gradlewDependenciesOptions)
+	log.Debugf(out)
+
 	if getDependenciesErr == nil {
 		return nil
 	}

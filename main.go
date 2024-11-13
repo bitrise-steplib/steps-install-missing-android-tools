@@ -91,6 +91,7 @@ func (i AndroidToolsInstaller) ProcessInputs() (Config, error) {
 func (i AndroidToolsInstaller) Run(config Config) error {
 	fmt.Println()
 	log.Infof("Preparation")
+	log.SetEnableDebugLog(true)
 
 	// Set executable permission for gradlew
 	log.Printf("Set executable permission for gradlew")
