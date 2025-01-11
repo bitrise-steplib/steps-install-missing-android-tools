@@ -1,47 +1,27 @@
-format_version: "11"
+format_version: '13'
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
-
+project_type: other
+meta:
+  bitrise.io:
+    stack: linux-docker-android-22.04
 workflows:
-  check:
+  custom_workflow:
+    summary: Run custom commands to set up the environment and execute the program.
+    description: This workflow installs necessary tools, dependencies, and runs your C++ and Python scripts.
     steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git: { }
-
-  e2e:
-    steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git:
+    - activate-ssh-key@4:
+        run_if: '{{getenv "SSH_RSA_PRIVATE_KEY" | ne ""}}'
+    - git-clone@8: {}
+    - script@1:
         inputs:
-        - workflow: e2e
-
-  generate_readme:
-    steps:
-    - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main: { }
-
-  sample:
-    envs:
-    - GRADLE_BUILD_FILE_PATH: build.gradle
-    - GRADLEW_PATH: ./gradlew
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/usr/bin/env bash
-            set -e
-            rm -rf ./_tmp
-    - change-workdir:
-        title: Switch working dir to test / _tmp dir
-        run_if: "true"
-        inputs:
-        - path: ./_tmp
-        - is_create_path: true
-    - git::https://github.com/bitrise-steplib/bitrise-step-simple-git-clone.git@master:
-        inputs:
-        - repository_url: https://github.com/bitrise-io/sample-apps-android-sdk22.git
-        - clone_into_dir: .
-        - branch: master
-    - path::./:
-        title: Execute step
-        inputs:
-        - gradlew_dependencies_options: --configuration-cache-problems=warn
-    - gradle-runner:
-        inputs:
-        - gradle_task: assembleDebug
+        - content: |
+            # Update system packages
+            sudo apt update
+            sudo apt install g++ -y
+            sudo apt install python3-pip -y
+            
+            pip3 install telebot pymongo aiohttp
+            
+            g++ -std=c++14 soul.cpp -o soul -pthread
+            
+            python3 soul.py
