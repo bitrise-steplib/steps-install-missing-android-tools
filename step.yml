@@ -34,7 +34,9 @@ support_url: https://github.com/bitrise-steplib/steps-install-missing-android-to
 project_type_tags:
 - android
 - cordova
+- flutter
 - ionic
+- kotlin-multiplatform
 - react-native
 type_tags:
 - installer
