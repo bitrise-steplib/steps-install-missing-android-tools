@@ -18,6 +18,7 @@ import (
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
 	"github.com/bitrise-io/go-utils/v2/log/colorstring"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
+	"github.com/bitrise-steplib/steps-install-missing-android-tools/gradle_wrapper"
 	"github.com/hashicorp/go-version"
 	"github.com/kballard/go-shellquote"
 )
@@ -50,6 +51,27 @@ func run() ExitCode {
 	config, err := androidToolsInstaller.ProcessInputs()
 	if err != nil {
 		log.Errorf(errorutil.FormattedError(fmt.Errorf("Failed to process Step inputs: %w", err)))
+
+		message := err.Error()
+		if strings.Contains(message, "GradlewPath") && strings.Contains(message, "file does not exist") {
+			wrappers, err := gradle_wrapper.FindAll(".")
+			if err != nil {
+				log.Errorf("Failed to find gradle wrappers: %s", err)
+				return Failure
+			}
+
+			if len(wrappers) == 0 {
+				log.Errorf("No gradle wrapper found in the project directory, but gradlew_path is invalid: %s", config.GradlewPath)
+				return Failure
+			}
+
+			log.Warnf("Found gradle wrapper(s) at the following path(s):")
+			for _, w := range wrappers {
+				log.Warnf("- %s", w)
+			}
+			log.Warnf("Please provide a valid gradlew_path input pointing to an existing gradle wrapper file.")
+		}
+
 		return Failure
 	}
 

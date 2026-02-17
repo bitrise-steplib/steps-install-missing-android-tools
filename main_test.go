@@ -9,9 +9,9 @@ import (
 
 func Test_currentNDKHome(t *testing.T) {
 	type test struct {
-		name string
-		envs map[string]string
-		wantPath string
+		name        string
+		envs        map[string]string
+		wantPath    string
 		wantCleanup bool
 	}
 
@@ -22,16 +22,16 @@ func Test_currentNDKHome(t *testing.T) {
 			envs: map[string]string{
 				"ANDROID_NDK_HOME": "/opt/android-ndk",
 			},
-			wantPath: "/opt/android-ndk",
+			wantPath:    "/opt/android-ndk",
 			wantCleanup: true,
 		},
 		{
 			name: "both ANDROID_NDK_HOME and ANDROID_HOME are set",
 			envs: map[string]string{
 				"ANDROID_NDK_HOME": "/opt/android-ndk",
-				"ANDROID_HOME": "/opt/android-sdk",
+				"ANDROID_HOME":     "/opt/android-sdk",
 			},
-			wantPath: "/opt/android-ndk",
+			wantPath:    "/opt/android-ndk",
 			wantCleanup: true,
 		},
 		{
@@ -39,7 +39,7 @@ func Test_currentNDKHome(t *testing.T) {
 			envs: map[string]string{
 				"ANDROID_HOME": "/home/user/android-sdk",
 			},
-			wantPath: "/home/user/android-sdk/ndk/23.0.7599858",
+			wantPath:    "/home/user/android-sdk/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
 		{
@@ -47,7 +47,7 @@ func Test_currentNDKHome(t *testing.T) {
 			envs: map[string]string{
 				"ANDROID_HOME": "/home/user/android-sdk",
 			},
-			wantPath: "/home/user/android-sdk/ndk/23.0.7599858",
+			wantPath:    "/home/user/android-sdk/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
 		{
@@ -55,7 +55,7 @@ func Test_currentNDKHome(t *testing.T) {
 			envs: map[string]string{
 				"ANDROID_HOME": "/home/user/android-sdk",
 			},
-			wantPath: "/home/user/android-sdk/ndk/23.0.7599858",
+			wantPath:    "/home/user/android-sdk/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
 		{
@@ -63,25 +63,25 @@ func Test_currentNDKHome(t *testing.T) {
 			envs: map[string]string{
 				"ANDROID_HOME": "/home/user/android-sdk",
 			},
-			wantPath: "/home/user/android-sdk/ndk/23.0.7599858",
+			wantPath:    "/home/user/android-sdk/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
 		{
 			name: "both ANDROID_HOME and SDK_ROOT are set, pointing to the same dir",
 			envs: map[string]string{
 				"ANDROID_HOME": "/home/user/android-sdk",
-				"SDK_ROOT": "/home/user/android-sdk",
+				"SDK_ROOT":     "/home/user/android-sdk",
 			},
-			wantPath: "/home/user/android-sdk/ndk/23.0.7599858",
+			wantPath:    "/home/user/android-sdk/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
 		{
 			name: "both ANDROID_HOME and SDK_ROOT are set, pointing to different dirs",
 			envs: map[string]string{
-				"ANDROID_HOME": "/home/user/android-sdk-home",
+				"ANDROID_HOME":     "/home/user/android-sdk-home",
 				"ANDROID_SDK_ROOT": "/home/user/android-sdk-root",
 			},
-			wantPath: "/home/user/android-sdk-home/ndk/23.0.7599858",
+			wantPath:    "/home/user/android-sdk-home/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
 		{
@@ -89,7 +89,7 @@ func Test_currentNDKHome(t *testing.T) {
 			envs: map[string]string{
 				"ANDROID_SDK_ROOT": "/home/user/android-sdk-root",
 			},
-			wantPath: "/home/user/android-sdk-root/ndk/23.0.7599858",
+			wantPath:    "/home/user/android-sdk-root/ndk/23.0.7599858",
 			wantCleanup: false,
 		},
 	}
