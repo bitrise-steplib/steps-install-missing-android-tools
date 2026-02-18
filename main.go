@@ -18,6 +18,7 @@ import (
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
 	"github.com/bitrise-io/go-utils/v2/log/colorstring"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
+	"github.com/bitrise-steplib/steps-install-missing-android-tools/gradle_wrapper"
 	"github.com/hashicorp/go-version"
 	"github.com/kballard/go-shellquote"
 )
@@ -50,6 +51,28 @@ func run() ExitCode {
 	config, err := androidToolsInstaller.ProcessInputs()
 	if err != nil {
 		log.Errorf(errorutil.FormattedError(fmt.Errorf("Failed to process Step inputs: %w", err)))
+
+		message := err.Error()
+		if strings.Contains(message, "GradlewPath") && strings.Contains(message, "file does not exist") {
+			handleInvalidGradlewPath(config.GradlewPath)
+		} else if strings.Contains(message, "gradlew is missing, broken or corrupted") {
+			log.Warnf("Gradle wrapper error detected.")
+			log.Warnf("The Gradle wrapper in your Android project appears to be missing or corrupted.")
+			log.Warnf("The step could not run your Gradle build because")
+			log.Warnf("the class `org.gradle.wrapper.GradleWrapperMain` could not be found.")
+			log.Warnf("Please check the following in your repository:")
+			log.Warnf("- `gradlew` (and, optionally, `gradlew.bat`) exist at your project root (or at `$PROJECT_LOCATION`)")
+			log.Warnf("- The following files are present and committed to source control:")
+			log.Warnf("  - `gradle/wrapper/gradle-wrapper.jar`")
+			log.Warnf("  - `gradle/wrapper/gradle-wrapper.properties`")
+			log.Warnf("If any of these files are missing or broken, regenerate the Gradle wrapper locally:")
+			log.Warnf("- Run `gradle wrapper` (or `./gradlew wrapper`) on your machine")
+			log.Warnf("- Commit the updated wrapper files (`gradlew`, `gradlew.bat`, and the `gradle/wrapper` directory)")
+			log.Warnf("- Push the changes and rerun this build on Bitrise.")
+			log.Warnf("For more details on this Gradle wrapper error, see:")
+			log.Warnf("https://stackoverflow.com/a/29806323")
+		}
+
 		return Failure
 	}
 
@@ -260,4 +283,23 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 	log.Printf("Exported $%s: %s", androidNDKHome, newNDKHome)
 
 	return nil
+}
+
+func handleInvalidGradlewPath(gradlewPath string) {
+	wrappers, err := gradle_wrapper.FindAll(".")
+	if err != nil {
+		log.Errorf("Failed to find gradle wrappers: %s", err)
+		return
+	}
+
+	if len(wrappers) == 0 {
+		log.Errorf("No gradle wrapper found in the project directory, but gradlew_path is invalid: %s", gradlewPath)
+		return
+	}
+
+	log.Warnf("Found gradle wrapper(s) at the following path(s):")
+	for _, w := range wrappers {
+		log.Warnf("- %s", w)
+	}
+	log.Warnf("Please provide a valid gradlew_path input pointing to an existing gradle wrapper file.")
 }
