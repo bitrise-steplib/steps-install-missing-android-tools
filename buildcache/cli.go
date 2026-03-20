@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	cliVersion       = "v1.3.4"
+	cliVersion       = "v1.4.0-alpha.1"
 	installerURL     = "https://raw.githubusercontent.com/bitrise-io/bitrise-build-cache-cli/main/install/installer.sh"
 	artifactRegistry = "https://artifactregistry.googleapis.com/download/v1/projects/ip-build-cache-prod/locations/us-central1/repositories/build-cache-cli-releases/files"
 )
