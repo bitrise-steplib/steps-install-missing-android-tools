@@ -12,12 +12,10 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/bitrise-io/go-utils/log"
 )
 
 const (
-	cliVersion       = "v1.4.0-alpha.2"
+	cliVersion       = "v1.4.0-alpha.3"
 	installerURL     = "https://raw.githubusercontent.com/bitrise-io/bitrise-build-cache-cli/main/install/installer.sh"
 	artifactRegistry = "https://artifactregistry.googleapis.com/download/v1/projects/ip-build-cache-prod/locations/us-central1/repositories/build-cache-cli-releases/files"
 )
@@ -144,8 +142,6 @@ func downloadFromArtifactRegistry(binDir, binaryPath string) error {
 }
 
 func runActivateMavenCentralMirror(binaryPath string) error {
-	log.Printf("Running: bitrise-build-cache activate mavencentral-mirror")
-
 	cmd := exec.Command(binaryPath, "activate", "mavencentral-mirror")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
