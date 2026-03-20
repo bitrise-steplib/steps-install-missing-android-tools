@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	cliVersion       = "v1.4.0-alpha.1"
+	cliVersion       = "v1.4.0-alpha.2"
 	installerURL     = "https://raw.githubusercontent.com/bitrise-io/bitrise-build-cache-cli/main/install/installer.sh"
 	artifactRegistry = "https://artifactregistry.googleapis.com/download/v1/projects/ip-build-cache-prod/locations/us-central1/repositories/build-cache-cli-releases/files"
 )
@@ -42,14 +42,11 @@ func downloadCLI(binDir, binaryPath string) error {
 	}
 
 	// Try GitHub installer first
-	log.Printf("Downloading Bitrise Build Cache CLI %s via GitHub installer...", cliVersion)
 	if err := downloadViaInstaller(binDir); err == nil {
 		if _, err := os.Stat(binaryPath); err == nil {
-			log.Printf("Successfully downloaded via GitHub installer")
 			return nil
 		}
 	}
-	log.Warnf("GitHub installer failed, trying Artifact Registry fallback...")
 
 	// Fall back to Artifact Registry
 	if err := downloadFromArtifactRegistry(binDir, binaryPath); err != nil {
@@ -59,8 +56,6 @@ func downloadCLI(binDir, binaryPath string) error {
 	if _, err := os.Stat(binaryPath); err != nil {
 		return fmt.Errorf("CLI binary not found after download attempts")
 	}
-
-	log.Printf("Successfully downloaded via Artifact Registry")
 	return nil
 }
 
@@ -83,10 +78,13 @@ func downloadViaInstaller(binDir string) error {
 
 	cmd := exec.Command("sh", "-s", "--", "-b", binDir, "-d", cliVersion)
 	cmd.Stdin = strings.NewReader(string(installerScript))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%w: %s", err, string(output))
+	}
+
+	return nil
 }
 
 func downloadFromArtifactRegistry(binDir, binaryPath string) error {
@@ -99,8 +97,6 @@ func downloadFromArtifactRegistry(binDir, binaryPath string) error {
 	filePath := fmt.Sprintf("%s:%s:%s", packageName, version, filename)
 
 	url := fmt.Sprintf("%s/%s:download?alt=media", artifactRegistry, filePath)
-
-	log.Printf("Downloading from Artifact Registry: %s", filePath)
 
 	client := &http.Client{Timeout: 60 * time.Second}
 	resp, err := client.Get(url)
@@ -148,7 +144,7 @@ func downloadFromArtifactRegistry(binDir, binaryPath string) error {
 }
 
 func runActivateMavenCentralMirror(binaryPath string) error {
-	log.Infof("Running: bitrise-build-cache activate mavencentral-mirror")
+	log.Printf("Running: bitrise-build-cache activate mavencentral-mirror")
 
 	cmd := exec.Command(binaryPath, "activate", "mavencentral-mirror")
 	cmd.Stdout = os.Stdout
