@@ -18,6 +18,7 @@ import (
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
 	"github.com/bitrise-io/go-utils/v2/log/colorstring"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
+	"github.com/bitrise-steplib/steps-install-missing-android-tools/buildcache"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/gradle_wrapper"
 	"github.com/hashicorp/go-version"
 	"github.com/kballard/go-shellquote"
@@ -174,6 +175,15 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 
 	fmt.Println()
 	log.Donef("Required SDK components are installed")
+
+	if os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
+		fmt.Println()
+		log.Infof("Activate Maven repo mirror")
+		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {
+			log.Warnf("Failed to activate Maven repo mirror: %s", err)
+			log.Warnf("Continuing without Maven repo mirror")
+		}
+	}
 
 	return nil
 }
