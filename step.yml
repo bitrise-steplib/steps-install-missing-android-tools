@@ -76,3 +76,11 @@ inputs:
       Additional options will be appended to the end of this command.
 
       Example: `--configuration-cache-problems=warn`.
+- enable_maven_repo_mirror: "true"
+  opts:
+    title: Use Bitrise MavenCentral mirror for dependencies
+    summary: When enabled and the build runs on Bitrise with the MavenCentral mirror available, Gradle will be configured to download dependencies from the mirror.
+    is_required: false
+    value_options:
+    - "true"
+    - "false"
