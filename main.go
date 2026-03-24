@@ -176,12 +176,13 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 	fmt.Println()
 	log.Donef("Required SDK components are installed")
 
-	// Activate MavenCentral mirror (noops if BITRISE_MAVENCENTRAL_PROXY_ENABLED != "true")
-	fmt.Println()
-	log.Infof("Activate MavenCentral mirror")
-	if err := buildcache.DownloadAndActivateMavenCentralMirror(); err != nil {
-		log.Warnf("Failed to activate MavenCentral mirror: %s", err)
-		log.Warnf("Continuing without MavenCentral mirror")
+	if os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
+		fmt.Println()
+		log.Infof("Activate Maven repo mirror")
+		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {
+			log.Warnf("Failed to activate Maven repo mirror: %s", err)
+			log.Warnf("Continuing without Maven repo mirror")
+		}
 	}
 
 	return nil

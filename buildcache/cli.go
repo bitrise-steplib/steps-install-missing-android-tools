@@ -20,10 +20,9 @@ const (
 	artifactRegistry = "https://artifactregistry.googleapis.com/download/v1/projects/ip-build-cache-prod/locations/us-central1/repositories/build-cache-cli-releases/files"
 )
 
-// DownloadAndActivateMavenCentralMirror downloads the bitrise-build-cache CLI
-// and runs `activate mavencentral-mirror`. The CLI itself noops when
-// BITRISE_MAVENCENTRAL_PROXY_ENABLED is not "true".
-func DownloadAndActivateMavenCentralMirror() error {
+// DownloadAndActivateMavenRepoMirror downloads the bitrise-build-cache CLI
+// and runs `activate mavencentral-mirror`.
+func DownloadAndActivateMavenRepoMirror() error {
 	binDir := filepath.Join(os.TempDir(), "bitrise-build-cache-bin")
 	binaryPath := filepath.Join(binDir, "bitrise-build-cache")
 
