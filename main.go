@@ -32,6 +32,7 @@ type Inputs struct {
 	AndroidSDKRoot             string `env:"ANDROID_SDK_ROOT"`
 	NDKVersion                 string `env:"ndk_version"`
 	GradlewDependenciesOptions string `env:"gradlew_dependencies_options"`
+	EnableMavenRepoMirror      string `env:"enable_maven_repo_mirror"`
 }
 
 type Config struct {
@@ -40,6 +41,7 @@ type Config struct {
 	AndroidSDKRoot             string
 	NDKVersion                 string
 	GradlewDependenciesOptions []string
+	EnableMavenRepoMirror      bool
 }
 
 func main() {
@@ -104,6 +106,7 @@ func (i AndroidToolsInstaller) ProcessInputs() (Config, error) {
 		AndroidSDKRoot:             inputs.AndroidSDKRoot,
 		NDKVersion:                 inputs.NDKVersion,
 		GradlewDependenciesOptions: gradlewDependenciesOptions,
+		EnableMavenRepoMirror:      inputs.EnableMavenRepoMirror == "true",
 	}
 
 	fmt.Println()
@@ -176,7 +179,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 	fmt.Println()
 	log.Donef("Required SDK components are installed")
 
-	if os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
+	if config.EnableMavenRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
 		fmt.Println()
 		log.Infof("Activate Maven repo mirror")
 		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {
