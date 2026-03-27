@@ -1,6 +1,6 @@
 module github.com/bitrise-steplib/steps-install-missing-android-tools
 
-go 1.16
+go 1.21
 
 require (
 	github.com/bitrise-io/go-android v1.0.0
