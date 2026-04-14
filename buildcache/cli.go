@@ -16,6 +16,7 @@ import (
 
 const (
 	cliVersion       = "v1.4.0"
+	cliBranch        = "maven-google-mirror"
 	installerURL     = "https://raw.githubusercontent.com/bitrise-io/bitrise-build-cache-cli/main/install/installer.sh"
 	artifactRegistry = "https://artifactregistry.googleapis.com/download/v1/projects/ip-build-cache-prod/locations/us-central1/repositories/build-cache-cli-releases/files"
 )
@@ -38,6 +39,13 @@ func downloadCLI(binDir, binaryPath string) error {
 		return fmt.Errorf("create bin directory: %w", err)
 	}
 
+	// Build from branch
+	if err := buildFromBranch(binDir); err == nil {
+		if _, err := os.Stat(binaryPath); err == nil {
+			return nil
+		}
+	}
+
 	// Try GitHub installer first
 	if err := downloadViaInstaller(binDir); err == nil {
 		if _, err := os.Stat(binaryPath); err == nil {
@@ -53,6 +61,27 @@ func downloadCLI(binDir, binaryPath string) error {
 	if _, err := os.Stat(binaryPath); err != nil {
 		return fmt.Errorf("CLI binary not found after download attempts")
 	}
+	return nil
+}
+
+func buildFromBranch(binDir string) error {
+	repoURL := "https://github.com/bitrise-io/bitrise-build-cache-cli.git"
+	cloneDir := filepath.Join(os.TempDir(), "bitrise-build-cache-cli-src")
+
+	_ = os.RemoveAll(cloneDir)
+
+	cmd := exec.Command("git", "clone", "--branch", cliBranch, "--depth", "1", repoURL, cloneDir)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("git clone: %w: %s", err, string(output))
+	}
+
+	buildCmd := exec.Command("go", "build", "-o", filepath.Join(binDir, "bitrise-build-cache"), ".")
+	buildCmd.Dir = cloneDir
+
+	if output, err := buildCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("go build: %w: %s", err, string(output))
+	}
+
 	return nil
 }
 
