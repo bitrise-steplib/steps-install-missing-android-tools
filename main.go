@@ -168,6 +168,15 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 		return fmt.Errorf("failed to ensure android licences: %w", err)
 	}
 
+	if config.EnableMavenRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
+		fmt.Println()
+		log.Infof("Activate Maven repo mirror")
+		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {
+			log.Warnf("Failed to activate Maven repo mirror: %s", err)
+			log.Warnf("Continuing without Maven repo mirror")
+		}
+	}
+
 	// Ensure required Android SDK components
 	fmt.Println()
 	log.Infof("Ensure required Android SDK components")
@@ -178,15 +187,6 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 
 	fmt.Println()
 	log.Donef("Required SDK components are installed")
-
-	if config.EnableMavenRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
-		fmt.Println()
-		log.Infof("Activate Maven repo mirror")
-		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {
-			log.Warnf("Failed to activate Maven repo mirror: %s", err)
-			log.Warnf("Continuing without Maven repo mirror")
-		}
-	}
 
 	return nil
 }
