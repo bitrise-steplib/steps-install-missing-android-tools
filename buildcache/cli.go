@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/bitrise-io/go-utils/log"
 )
 
 const (
@@ -39,9 +41,11 @@ func downloadCLI(binDir, binaryPath string) error {
 		return fmt.Errorf("create bin directory: %w", err)
 	}
 
+	log.Printf("Attempting to build bitrise-build-cache CLI version from branch %s, %s", cliBranch, time.Now().Format(time.RFC3339))
 	// Build from branch
 	if err := buildFromBranch(binDir); err == nil {
 		if _, err := os.Stat(binaryPath); err == nil {
+			log.Printf("CLI build is done: %s", time.Now().Format(time.RFC3339))
 			return nil
 		}
 	}
