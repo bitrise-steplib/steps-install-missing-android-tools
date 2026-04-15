@@ -59,21 +59,21 @@ func run() ExitCode {
 		if strings.Contains(message, "GradlewPath") && strings.Contains(message, "file does not exist") {
 			handleInvalidGradlewPath(config.GradlewPath)
 		} else if strings.Contains(message, "gradlew is missing, broken or corrupted") {
-			log.Warnf("Gradle wrapper error detected.")
-			log.Warnf("The Gradle wrapper in your Android project appears to be missing or corrupted.")
-			log.Warnf("The step could not run your Gradle build because")
-			log.Warnf("the class `org.gradle.wrapper.GradleWrapperMain` could not be found.")
-			log.Warnf("Please check the following in your repository:")
-			log.Warnf("- `gradlew` (and, optionally, `gradlew.bat`) exist at your project root (or at `$PROJECT_LOCATION`)")
-			log.Warnf("- The following files are present and committed to source control:")
-			log.Warnf("  - `gradle/wrapper/gradle-wrapper.jar`")
-			log.Warnf("  - `gradle/wrapper/gradle-wrapper.properties`")
-			log.Warnf("If any of these files are missing or broken, regenerate the Gradle wrapper locally:")
-			log.Warnf("- Run `gradle wrapper` (or `./gradlew wrapper`) on your machine")
-			log.Warnf("- Commit the updated wrapper files (`gradlew`, `gradlew.bat`, and the `gradle/wrapper` directory)")
-			log.Warnf("- Push the changes and rerun this build on Bitrise.")
-			log.Warnf("For more details on this Gradle wrapper error, see:")
-			log.Warnf("https://stackoverflow.com/a/29806323")
+			log.TWarnf("Gradle wrapper error detected.")
+			log.TWarnf("The Gradle wrapper in your Android project appears to be missing or corrupted.")
+			log.TWarnf("The step could not run your Gradle build because")
+			log.TWarnf("the class `org.gradle.wrapper.GradleWrapperMain` could not be found.")
+			log.TWarnf("Please check the following in your repository:")
+			log.TWarnf("- `gradlew` (and, optionally, `gradlew.bat`) exist at your project root (or at `$PROJECT_LOCATION`)")
+			log.TWarnf("- The following files are present and committed to source control:")
+			log.TWarnf("  - `gradle/wrapper/gradle-wrapper.jar`")
+			log.TWarnf("  - `gradle/wrapper/gradle-wrapper.properties`")
+			log.TWarnf("If any of these files are missing or broken, regenerate the Gradle wrapper locally:")
+			log.TWarnf("- Run `gradle wrapper` (or `./gradlew wrapper`) on your machine")
+			log.TWarnf("- Commit the updated wrapper files (`gradlew`, `gradlew.bat`, and the `gradle/wrapper` directory)")
+			log.TWarnf("- Push the changes and rerun this build on Bitrise.")
+			log.TWarnf("For more details on this Gradle wrapper error, see:")
+			log.TWarnf("https://stackoverflow.com/a/29806323")
 		}
 
 		return Failure
@@ -117,17 +117,17 @@ func (i AndroidToolsInstaller) ProcessInputs() (Config, error) {
 
 func (i AndroidToolsInstaller) Run(config Config) error {
 	fmt.Println()
-	log.Infof("Preparation")
+	log.TInfof("Preparation")
 
 	// Set executable permission for gradlew
-	log.Printf("Set executable permission for gradlew")
+	log.TPrintf("Set executable permission for gradlew")
 	if err := os.Chmod(config.GradlewPath, 0770); err != nil {
 		return fmt.Errorf("failed to set executable permission for gradlew: %w", err)
 	}
 
 	// Initialize Android SDK
 	fmt.Println()
-	log.Infof("Initialize Android SDK")
+	log.TInfof("Initialize Android SDK")
 	androidSdk, err := sdk.NewDefaultModel(sdk.Environment{
 		AndroidHome:    config.AndroidHome,
 		AndroidSDKRoot: config.AndroidSDKRoot,
@@ -138,7 +138,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 
 	fmt.Println()
 	if config.NDKVersion != "" {
-		log.Infof("Installing Android NDK")
+		log.TInfof("Installing Android NDK")
 
 		_, err := version.NewVersion(config.NDKVersion)
 		if err != nil {
@@ -149,8 +149,8 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 			return fmt.Errorf("install new NDK package: %w", err)
 		}
 	} else {
-		log.Infof("Clearing NDK environment")
-		log.Printf("Unset ANDROID_NDK_HOME")
+		log.TInfof("Clearing NDK environment")
+		log.TPrintf("Unset ANDROID_NDK_HOME")
 
 		if err := os.Unsetenv("ANDROID_NDK_HOME"); err != nil {
 			return fmt.Errorf("unset environment variable: %w", err)
@@ -162,7 +162,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 	}
 
 	// Ensure android licences
-	log.Printf("Ensure android licences")
+	log.TPrintf("Ensure android licences")
 
 	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
 		return fmt.Errorf("failed to ensure android licences: %w", err)
@@ -170,23 +170,23 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 
 	if config.EnableMavenRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
 		fmt.Println()
-		log.Infof("Activate Maven repo mirror")
+		log.TInfof("Activate Maven repo mirror")
 		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {
-			log.Warnf("Failed to activate Maven repo mirror: %s", err)
-			log.Warnf("Continuing without Maven repo mirror")
+			log.TWarnf("Failed to activate Maven repo mirror: %s", err)
+			log.TWarnf("Continuing without Maven repo mirror")
 		}
 	}
 
 	// Ensure required Android SDK components
 	fmt.Println()
-	log.Infof("Ensure required Android SDK components")
+	log.TInfof("Ensure required Android SDK components")
 
 	if err := androidcomponents.Ensure(androidSdk, config.GradlewPath, config.GradlewDependenciesOptions); err != nil {
 		return fmt.Errorf("failed to install missing android components: %w", err)
 	}
 
 	fmt.Println()
-	log.Donef("Required SDK components are installed")
+	log.TDonef("Required SDK components are installed")
 
 	return nil
 }
@@ -222,8 +222,8 @@ func targetNDKPath(envRepo env.Repository, requestedNDKVersion string) (string, 
 		// but it's an explicit path, so use it if it's set on the system.
 		// And because we don't know if it's `ndk-bundle` or a specific side-by-side version,
 		// we return true for cleanup.
-		log.Warnf("$%s is set to %s", androidNDKHome, v)
-		log.Warnf("This variable is deprecated and modern Android Gradle Plugin versions no longer take it into account.")
+		log.TWarnf("$%s is set to %s", androidNDKHome, v)
+		log.TWarnf("This variable is deprecated and modern Android Gradle Plugin versions no longer take it into account.")
 		return v, true
 	}
 	if androidHome := envRepo.Get("ANDROID_HOME"); androidHome != "" {
@@ -250,25 +250,25 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 	targetNDKPath, doCleanup := targetNDKPath(envRepo, version)
 	currentVersionAtPath := ndkVersion(targetNDKPath)
 	if currentVersionAtPath != "" {
-		log.Printf("NDK %s found at %s", colorstring.Cyan(currentVersionAtPath), targetNDKPath)
+		log.TPrintf("NDK %s found at %s", colorstring.Cyan(currentVersionAtPath), targetNDKPath)
 	} else {
-		log.Printf("NDK %s %s found at %s", colorstring.Cyan(version), colorstring.Yellow("not"), targetNDKPath)
+		log.TPrintf("NDK %s %s found at %s", colorstring.Cyan(version), colorstring.Yellow("not"), targetNDKPath)
 	}
 
 	if currentVersionAtPath == version {
-		log.Donef("NDK %s is already installed", version)
+		log.TDonef("NDK %s is already installed", version)
 		return nil
 	}
 
 	if currentVersionAtPath != "" || doCleanup {
-		log.Printf("Removing existing NDK...")
+		log.TPrintf("Removing existing NDK...")
 		if err := os.RemoveAll(targetNDKPath); err != nil {
 			return err
 		}
-		log.Printf("Done")
+		log.TPrintf("Done")
 	}
 
-	log.Printf("Installing NDK %s with sdkmanager", colorstring.Cyan(version))
+	log.TPrintf("Installing NDK %s with sdkmanager", colorstring.Cyan(version))
 	sdkManager, err := sdkmanager.New(androidSdk)
 	if err != nil {
 		return err
@@ -277,14 +277,14 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 	cmd := sdkManager.InstallCommand(ndkComponent)
 	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		log.Errorf(output)
+		log.TErrorf(output)
 		return fmt.Errorf("run %s: %w", cmd.PrintableCommandArgs(), err)
 	}
 	newNDKHome := filepath.Join(androidSdk.GetAndroidHome(), ndkComponent.InstallPathInAndroidHome())
 
-	log.Printf("Done")
+	log.TPrintf("Done")
 
-	log.Printf("Append NDK folder to $PATH")
+	log.TPrintf("Append NDK folder to $PATH")
 	// Old NDK folder was deleted above, its path can stay in $PATH
 	if err := tools.ExportEnvironmentWithEnvman("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), newNDKHome)); err != nil {
 		return err
@@ -293,7 +293,7 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 	if err := tools.ExportEnvironmentWithEnvman(androidNDKHome, newNDKHome); err != nil {
 		return err
 	}
-	log.Printf("Exported $%s: %s", androidNDKHome, newNDKHome)
+	log.TPrintf("Exported $%s: %s", androidNDKHome, newNDKHome)
 
 	return nil
 }
@@ -301,18 +301,18 @@ func updateNDK(version string, androidSdk *sdk.Model) error {
 func handleInvalidGradlewPath(gradlewPath string) {
 	wrappers, err := gradle_wrapper.FindAll(".")
 	if err != nil {
-		log.Errorf("Failed to find gradle wrappers: %s", err)
+		log.TErrorf("Failed to find gradle wrappers: %s", err)
 		return
 	}
 
 	if len(wrappers) == 0 {
-		log.Errorf("No gradle wrapper found in the project directory, but gradlew_path is invalid: %s", gradlewPath)
+		log.TErrorf("No gradle wrapper found in the project directory, but gradlew_path is invalid: %s", gradlewPath)
 		return
 	}
 
-	log.Warnf("Found gradle wrapper(s) at the following path(s):")
+	log.TWarnf("Found gradle wrapper(s) at the following path(s):")
 	for _, w := range wrappers {
-		log.Warnf("- %s", w)
+		log.TWarnf("- %s", w)
 	}
-	log.Warnf("Please provide a valid gradlew_path input pointing to an existing gradle wrapper file.")
+	log.TWarnf("Please provide a valid gradlew_path input pointing to an existing gradle wrapper file.")
 }
