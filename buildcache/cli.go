@@ -12,13 +12,10 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/bitrise-io/go-utils/log"
 )
 
 const (
-	cliVersion       = "v1.4.0"
-	cliBranch        = "maven-google-mirror"
+	cliVersion       = "v2.0.2"
 	installerURL     = "https://raw.githubusercontent.com/bitrise-io/bitrise-build-cache-cli/main/install/installer.sh"
 	artifactRegistry = "https://artifactregistry.googleapis.com/download/v1/projects/ip-build-cache-prod/locations/us-central1/repositories/build-cache-cli-releases/files"
 )
@@ -41,15 +38,6 @@ func downloadCLI(binDir, binaryPath string) error {
 		return fmt.Errorf("create bin directory: %w", err)
 	}
 
-	log.Printf("Attempting to build bitrise-build-cache CLI version from branch %s, %s", cliBranch, time.Now().Format(time.RFC3339))
-	// Build from branch
-	if err := buildFromBranch(binDir); err == nil {
-		if _, err := os.Stat(binaryPath); err == nil {
-			log.Printf("CLI build is done: %s", time.Now().Format(time.RFC3339))
-			return nil
-		}
-	}
-
 	// Try GitHub installer first
 	if err := downloadViaInstaller(binDir); err == nil {
 		if _, err := os.Stat(binaryPath); err == nil {
@@ -65,27 +53,6 @@ func downloadCLI(binDir, binaryPath string) error {
 	if _, err := os.Stat(binaryPath); err != nil {
 		return fmt.Errorf("CLI binary not found after download attempts")
 	}
-	return nil
-}
-
-func buildFromBranch(binDir string) error {
-	repoURL := "https://github.com/bitrise-io/bitrise-build-cache-cli.git"
-	cloneDir := filepath.Join(os.TempDir(), "bitrise-build-cache-cli-src")
-
-	_ = os.RemoveAll(cloneDir)
-
-	cmd := exec.Command("git", "clone", "--branch", cliBranch, "--depth", "1", repoURL, cloneDir)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("git clone: %w: %s", err, string(output))
-	}
-
-	buildCmd := exec.Command("go", "build", "-o", filepath.Join(binDir, "bitrise-build-cache"), ".")
-	buildCmd.Dir = cloneDir
-
-	if output, err := buildCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("go build: %w: %s", err, string(output))
-	}
-
 	return nil
 }
 
