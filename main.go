@@ -32,7 +32,7 @@ type Inputs struct {
 	AndroidSDKRoot             string `env:"ANDROID_SDK_ROOT"`
 	NDKVersion                 string `env:"ndk_version"`
 	GradlewDependenciesOptions string `env:"gradlew_dependencies_options"`
-	EnableMavenRepoMirror      string `env:"enable_maven_repo_mirror"`
+	EnableRepoMirror           string `env:"enable_repo_mirror"`
 }
 
 type Config struct {
@@ -41,7 +41,7 @@ type Config struct {
 	AndroidSDKRoot             string
 	NDKVersion                 string
 	GradlewDependenciesOptions []string
-	EnableMavenRepoMirror      bool
+	EnableRepoMirror           bool
 }
 
 func main() {
@@ -106,7 +106,7 @@ func (i AndroidToolsInstaller) ProcessInputs() (Config, error) {
 		AndroidSDKRoot:             inputs.AndroidSDKRoot,
 		NDKVersion:                 inputs.NDKVersion,
 		GradlewDependenciesOptions: gradlewDependenciesOptions,
-		EnableMavenRepoMirror:      inputs.EnableMavenRepoMirror == "true",
+		EnableRepoMirror:           inputs.EnableRepoMirror == "true",
 	}
 
 	fmt.Println()
@@ -168,7 +168,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 		return fmt.Errorf("failed to ensure android licences: %w", err)
 	}
 
-	if config.EnableMavenRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
+	if config.EnableRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
 		fmt.Println()
 		log.TInfof("Activate Maven repo mirror")
 		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {

@@ -21,7 +21,7 @@ const (
 )
 
 // DownloadAndActivateMavenRepoMirror downloads the bitrise-build-cache CLI
-// and runs `activate mavencentral-mirror`.
+// and runs `activate gradle-mirrors`.
 func DownloadAndActivateMavenRepoMirror() error {
 	binDir := filepath.Join(os.TempDir(), "bitrise-build-cache-bin")
 	binaryPath := filepath.Join(binDir, "bitrise-build-cache")
@@ -30,7 +30,7 @@ func DownloadAndActivateMavenRepoMirror() error {
 		return fmt.Errorf("download bitrise-build-cache CLI: %w", err)
 	}
 
-	return runActivateMavenCentralMirror(binaryPath)
+	return runActivateGradleMirrors(binaryPath)
 }
 
 func downloadCLI(binDir, binaryPath string) error {
@@ -46,7 +46,7 @@ func downloadCLI(binDir, binaryPath string) error {
 	}
 
 	// Fall back to Artifact Registry
-	if err := downloadFromArtifactRegistry(binDir, binaryPath); err != nil {
+	if err := downloadFromArtifactRegistry(binaryPath); err != nil {
 		return fmt.Errorf("artifact registry fallback: %w", err)
 	}
 
@@ -84,7 +84,7 @@ func downloadViaInstaller(binDir string) error {
 	return nil
 }
 
-func downloadFromArtifactRegistry(binDir, binaryPath string) error {
+func downloadFromArtifactRegistry(binaryPath string) error {
 	osName := runtime.GOOS
 	arch := runtime.GOARCH
 
@@ -140,13 +140,13 @@ func downloadFromArtifactRegistry(binDir, binaryPath string) error {
 	return fmt.Errorf("bitrise-build-cache binary not found in tar archive")
 }
 
-func runActivateMavenCentralMirror(binaryPath string) error {
-	cmd := exec.Command(binaryPath, "activate", "mavencentral-mirror")
+func runActivateGradleMirrors(binaryPath string) error {
+	cmd := exec.Command(binaryPath, "activate", "gradle-mirrors")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("activate mavencentral-mirror: %w", err)
+		return fmt.Errorf("activate gradle-mirrors: %w", err)
 	}
 
 	return nil
