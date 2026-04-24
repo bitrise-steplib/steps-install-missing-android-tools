@@ -1,6 +1,6 @@
 module github.com/bitrise-steplib/steps-install-missing-android-tools
 
-go 1.24.0
+go 1.21
 
 require (
 	github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.5.0
