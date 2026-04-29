@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -171,7 +172,7 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 	if config.EnableRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
 		fmt.Println()
 		log.TInfof("Activate Maven repo mirror")
-		if err := buildcache.DownloadAndActivateMavenRepoMirror(); err != nil {
+		if err := buildcache.ActivateRepoMirrors(context.Background()); err != nil {
 			log.TWarnf("Failed to activate Maven repo mirror: %s", err)
 			log.TWarnf("Continuing without Maven repo mirror")
 		}

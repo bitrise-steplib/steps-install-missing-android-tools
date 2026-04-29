@@ -1,0 +1,60 @@
+// init.gradle.kts
+apply<InternalRepositoryPlugin>()
+
+class InternalRepositoryPlugin : Plugin<Gradle> {
+    override fun apply(gradle: Gradle) {
+        {{- range .Mirrors }}
+        val canBeMirrored{{ .ID }}: Spec<MavenArtifactRepository> =
+            Spec { r -> {{ .GradleMatch }} }
+
+        val useMirror{{ .ID }}: Action<MavenArtifactRepository> = Action {
+            val mirrorUrl: String = "{{ .MirrorURL }}"
+            setUrl(mirrorUrl)
+        }
+        {{- end }}
+        val configureMirror: Action<RepositoryHandler> = Action {
+            {{- range .Mirrors }}
+            withType(MavenArtifactRepository::class.java)
+                .matching(canBeMirrored{{ .ID }})
+                .configureEach(useMirror{{ .ID }})
+            {{- end }}
+        }
+        val configurePluginManagementMirror: Action<RepositoryHandler> = Action {
+            {{- range .Mirrors }}{{ if .ApplyToPluginManagement }}
+            withType(MavenArtifactRepository::class.java)
+                .matching(canBeMirrored{{ .ID }})
+                .all(useMirror{{ .ID }})
+            {{- end }}{{ end }}
+        }
+        gradle.beforeSettings(Action {
+            configureMirror.execute(getBuildscript().getRepositories())
+            // pluginManagement.repositories is empty here, so adding the mirror first
+            // makes plugin resolution try it before any repos declared in settings.gradle.
+            // Only mirrors flagged ApplyToPluginManagement run here — google's mirror URL is incompatible with Gradle's plugin portal.
+            val pmRepos = getPluginManagement().getRepositories()
+            {{- range .Mirrors }}{{ if .ApplyToPluginManagement }}
+            pmRepos.maven {
+                setName("BitriseMirror{{ .ID }}")
+                setUrl("{{ .MirrorURL }}")
+            }
+            {{- end }}{{ end }}
+            // Adding any repo above suppresses Gradle's default
+            // pluginManagement.repositories = [gradlePluginPortal()] for projects without
+            // an explicit pluginManagement {} block. Re-add it explicitly so plugin
+            // resolution can fall back to the portal when the prepended mirrors don't
+            // serve the artifact (e.g. plugins that aren't on maven central).
+            pmRepos.gradlePluginPortal()
+            configurePluginManagementMirror.execute(pmRepos)
+        })
+        // Remove the settingsEvaluated part if you are using Gradle <6.8
+        gradle.settingsEvaluated(Action {
+            configureMirror.execute(getDependencyResolutionManagement().getRepositories())
+        })
+        gradle.beforeProject(Action {
+            configureMirror.execute(getBuildscript().getRepositories())
+        })
+        gradle.afterProject(Action {
+            configureMirror.execute(getRepositories())
+        })
+    }
+}
