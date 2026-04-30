@@ -30,6 +30,7 @@ type templateEntry struct {
 	GradleMatch             string
 	MirrorURL               string
 	ApplyToPluginManagement bool
+	UseAsRobolectricRepo    bool
 }
 
 type templateData struct {
@@ -73,6 +74,7 @@ func Activate(logger log.Logger, osProxy utils.OsProxy, params Params) error {
 			GradleMatch:             m.GradleMatch,
 			MirrorURL:               url,
 			ApplyToPluginManagement: m.ApplyToPluginManagement,
+			UseAsRobolectricRepo:    m.UseAsRobolectricRepo,
 		})
 		logger.Debugf("Mirror %s: region=%s, URL=%s", m.FlagName, region, url)
 	}
