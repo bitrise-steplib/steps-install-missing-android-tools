@@ -19,10 +19,11 @@ const DatacenterEnvKey = "BITRISE_DEN_VM_DATACENTER"
 
 // Params bundles the inputs needed to write the Gradle mirrors init script.
 type Params struct {
-	GradleHome string       // absolute path to the Gradle home (e.g. ~/.gradle expanded)
-	Mirrors    []RepoMirror // mirrors to install
-	Datacenter string       // datacenter (e.g. "AMS1") used to build the mirror URL
-	Enabled    bool         // when false, Activate is a no-op
+	GradleHome  string       // absolute path to the Gradle home (e.g. ~/.gradle expanded)
+	Mirrors     []RepoMirror // mirrors to install
+	Datacenter  string       // datacenter (e.g. "AMS1") used to build the mirror URL
+	Enabled     bool         // when false, Activate is a no-op
+	ProjectRoot string       // project root scanned for scope-gap warnings; empty disables scanning
 }
 
 type templateEntry struct {
@@ -102,6 +103,10 @@ func Activate(logger log.Logger, osProxy utils.OsProxy, params Params) error {
 	}
 
 	logger.Infof("Gradle mirrors activated")
+
+	if params.ProjectRoot != "" {
+		LogScopeGapWarnings(logger, osProxy, params.ProjectRoot)
+	}
 
 	return nil
 }

@@ -28,6 +28,11 @@ type ActivatorParams struct {
 	// Empty means DefaultGradleHome.
 	GradleHome string
 
+	// ProjectRoot is the directory scanned for scope-gap warnings (Gradle
+	// scripts using `apply(from = ...)`). Empty falls back to the current
+	// working directory; "-" disables scanning.
+	ProjectRoot string
+
 	// SelectedFlags lists the mirror flag names to enable (e.g. "mavencentral",
 	// "google"). Empty means all mirrors in mirrorsconfig.KnownMirrors.
 	SelectedFlags []string
@@ -66,6 +71,7 @@ type Activator struct {
 	pathModifier pathutil.PathModifier
 
 	gradleHome    string
+	projectRoot   string
 	selectedFlags []string
 	datacenter    string
 	enabled       *bool
@@ -105,6 +111,7 @@ func NewActivator(params ActivatorParams) *Activator {
 		pathModifier: pathModifier,
 
 		gradleHome:    gradleHome,
+		projectRoot:   params.ProjectRoot,
 		selectedFlags: params.SelectedFlags,
 		datacenter:    params.Datacenter,
 		enabled:       params.Enabled,
@@ -128,12 +135,14 @@ func (a *Activator) Activate(_ context.Context) error {
 	enabled := a.resolveEnabled()
 	datacenter := a.resolveDatacenter()
 	selected := mirrorsconfig.FilterByFlagNames(a.selectedFlags)
+	projectRoot := a.resolveProjectRoot()
 
 	if err := mirrorsconfig.Activate(a.logger, a.osProxy, mirrorsconfig.Params{
-		GradleHome: gradleHome,
-		Mirrors:    selected,
-		Datacenter: datacenter,
-		Enabled:    enabled,
+		GradleHome:  gradleHome,
+		Mirrors:     selected,
+		Datacenter:  datacenter,
+		Enabled:     enabled,
+		ProjectRoot: projectRoot,
 	}); err != nil {
 		return fmt.Errorf("activate gradle mirrors: %w", err)
 	}
@@ -159,4 +168,22 @@ func (a *Activator) resolveDatacenter() string {
 	}
 
 	return a.envs[mirrorsconfig.DatacenterEnvKey]
+}
+
+func (a *Activator) resolveProjectRoot() string {
+	switch a.projectRoot {
+	case "-":
+		return ""
+	case "":
+		cwd, err := a.osProxy.Getwd()
+		if err != nil {
+			a.logger.Debugf("Could not determine working directory for scope-gap scan: %s", err)
+
+			return ""
+		}
+
+		return cwd
+	default:
+		return a.projectRoot
+	}
 }
