@@ -17,12 +17,26 @@ const EnabledEnvKey = "BITRISE_MAVENCENTRAL_PROXY_ENABLED"
 // DatacenterEnvKey identifies the Bitrise datacenter the build runs in.
 const DatacenterEnvKey = "BITRISE_DEN_VM_DATACENTER"
 
+// MirrorURLEnvKeyPrefix is the prefix for per-mirror URL env vars exported on
+// activation: `BITRISE_MAVENCENTRAL_PROXY_URL_<TemplateID>` (e.g.
+// `BITRISE_MAVENCENTRAL_PROXY_URL_ApacheCentral`).
+const MirrorURLEnvKeyPrefix = "BITRISE_MAVENCENTRAL_PROXY_URL_"
+
+// Exporter exports an env var for the rest of the workflow. Implemented by
+// internal/envexport.EnvExporter (sets process env, calls envman on Bitrise CI,
+// and writes to GITHUB_ENV on GitHub Actions).
+type Exporter interface {
+	Export(key, value string)
+}
+
 // Params bundles the inputs needed to write the Gradle mirrors init script.
 type Params struct {
-	GradleHome string       // absolute path to the Gradle home (e.g. ~/.gradle expanded)
-	Mirrors    []RepoMirror // mirrors to install
-	Datacenter string       // datacenter (e.g. "AMS1") used to build the mirror URL
-	Enabled    bool         // when false, Activate is a no-op
+	GradleHome  string       // absolute path to the Gradle home (e.g. ~/.gradle expanded)
+	Mirrors     []RepoMirror // mirrors to install
+	Datacenter  string       // datacenter (e.g. "AMS1") used to build the mirror URL
+	Enabled     bool         // when false, Activate is a no-op
+	ProjectRoot string       // project root scanned for scope-gap warnings; empty disables scanning
+	Exporter    Exporter     // when non-nil, exports BITRISE_MAVENCENTRAL_PROXY_URL_<ID> per activated mirror
 }
 
 type templateEntry struct {
@@ -102,6 +116,18 @@ func Activate(logger log.Logger, osProxy utils.OsProxy, params Params) error {
 	}
 
 	logger.Infof("Gradle mirrors activated")
+
+	if params.Exporter != nil {
+		for _, e := range entries {
+			key := MirrorURLEnvKeyPrefix + e.ID
+			params.Exporter.Export(key, e.MirrorURL)
+			logger.Debugf("Exported %s=%s", key, e.MirrorURL)
+		}
+	}
+
+	if params.ProjectRoot != "" {
+		LogScopeGapWarnings(logger, osProxy, params.ProjectRoot)
+	}
 
 	return nil
 }
