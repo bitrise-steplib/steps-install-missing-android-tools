@@ -56,5 +56,12 @@ class InternalRepositoryPlugin : Plugin<Gradle> {
         gradle.afterProject(Action {
             configureMirror.execute(getRepositories())
         })
+        {{- range .Mirrors }}{{ if .UseAsRobolectricRepo }}
+        gradle.afterProject(Action {
+            tasks.withType(Test::class.java).configureEach {
+                systemProperty("robolectric.dependency.repo.url", "{{ .MirrorURL }}")
+            }
+        })
+        {{- end }}{{ end }}
     }
 }

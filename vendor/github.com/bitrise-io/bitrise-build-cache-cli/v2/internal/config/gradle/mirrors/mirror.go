@@ -15,6 +15,7 @@ type RepoMirror struct {
 	URLSegment              string // last path segment in the mirror URL, e.g. "central"
 	GradleMatch             string // Kotlin predicate body (using `r` as the repo) that decides whether the repo should be mirrored
 	ApplyToPluginManagement bool   // also apply this mirror to pluginManagement.repositories
+	UseAsRobolectricRepo    bool   // also expose this mirror via the robolectric.dependency.repo.url system property on Test tasks
 }
 
 // KnownMirrors is the registry of supported mirrors.
@@ -22,7 +23,7 @@ type RepoMirror struct {
 // (e.g. apache-central) must run before name-based ones that overwrite the URL.
 var KnownMirrors = []RepoMirror{ //nolint:gochecknoglobals
 	{FlagName: "mavencentral-apache", TemplateID: "ApacheCentral", URLSegment: "apache-central", GradleMatch: `r.getUrl().toString().trimEnd('/').equals("https://repo.maven.apache.org/maven2")`, ApplyToPluginManagement: true},
-	{FlagName: "mavencentral", TemplateID: "Central", URLSegment: "central", GradleMatch: `r.getName().equals(ArtifactRepositoryContainer.DEFAULT_MAVEN_CENTRAL_REPO_NAME) || r.getUrl().toString().trimEnd('/') in setOf("https://repo1.maven.org/maven2", "https://jcenter.bintray.com")`},
+	{FlagName: "mavencentral", TemplateID: "Central", URLSegment: "central", GradleMatch: `r.getName().equals(ArtifactRepositoryContainer.DEFAULT_MAVEN_CENTRAL_REPO_NAME) || r.getUrl().toString().trimEnd('/') in setOf("https://repo1.maven.org/maven2", "https://jcenter.bintray.com")`, UseAsRobolectricRepo: true},
 	{FlagName: "google", TemplateID: "Google", URLSegment: "google", GradleMatch: `r.getName().equals("Google")`},
 }
 
