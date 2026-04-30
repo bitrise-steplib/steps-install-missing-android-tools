@@ -25,6 +25,8 @@ var KnownMirrors = []RepoMirror{ //nolint:gochecknoglobals
 	{FlagName: "mavencentral-apache", TemplateID: "ApacheCentral", URLSegment: "apache-central", GradleMatch: `r.getUrl().toString().trimEnd('/').equals("https://repo.maven.apache.org/maven2")`, ApplyToPluginManagement: true},
 	{FlagName: "mavencentral", TemplateID: "Central", URLSegment: "central", GradleMatch: `r.getName().equals(ArtifactRepositoryContainer.DEFAULT_MAVEN_CENTRAL_REPO_NAME) || r.getUrl().toString().trimEnd('/') in setOf("https://repo1.maven.org/maven2", "https://jcenter.bintray.com")`, UseAsRobolectricRepo: true},
 	{FlagName: "google", TemplateID: "Google", URLSegment: "google", GradleMatch: `r.getName().equals("Google")`},
+	{FlagName: "jitpack", TemplateID: "JitPack", URLSegment: "jitpack", GradleMatch: `r.getUrl().toString().trimEnd('/') in setOf("https://jitpack.io", "https://www.jitpack.io")`},
+	{FlagName: "gradle-plugin-portal", TemplateID: "PluginPortal", URLSegment: "gradle-plugins", GradleMatch: `r.getUrl().toString().trimEnd('/').equals("https://plugins.gradle.org/m2")`, ApplyToPluginManagement: true},
 }
 
 //go:embed asset/gradle-mirrors.init.gradle.kts.gotemplate
