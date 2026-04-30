@@ -1,6 +1,8 @@
-# github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.4.4
+# github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.4.7
 ## explicit; go 1.24.0
+github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/config/common
 github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/config/gradle/mirrors
+github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/consts
 github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/stringmerge
 github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/utils
 github.com/bitrise-io/bitrise-build-cache-cli/v2/pkg/gradle/mirrors
@@ -33,6 +35,7 @@ github.com/bitrise-io/go-utils/v2/exitcode
 github.com/bitrise-io/go-utils/v2/log
 github.com/bitrise-io/go-utils/v2/log/colorstring
 github.com/bitrise-io/go-utils/v2/pathutil
+github.com/bitrise-io/go-utils/v2/retryhttp
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew

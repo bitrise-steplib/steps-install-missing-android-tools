@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 
+	configcommon "github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/config/common"
 	mirrorsconfig "github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/config/gradle/mirrors"
 	"github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/utils"
 )
@@ -116,6 +117,7 @@ func NewActivator(params ActivatorParams) *Activator {
 // env var), or when no datacenter is available, Activate logs the reason and
 // returns nil.
 func (a *Activator) Activate(_ context.Context) error {
+	configcommon.LogCLIVersion(a.logger)
 	a.logger.TInfof("Activate Bitrise mirrors for Gradle")
 
 	gradleHome, err := a.pathModifier.AbsPath(a.gradleHome)
