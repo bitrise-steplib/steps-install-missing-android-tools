@@ -1,5 +1,5 @@
-github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.5.0 h1:H6sgX541H6ApmSP3iro921AdcPOMeX7Bk5HQ40nUNhA=
-github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.5.0/go.mod h1:6LH9KAREtVpZn5FWvo7YEd+d6cz3McEKag4NvmiuQU0=
+github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.6.0 h1:ggnskS2+gsKtANgZ5dmbqUDW0UgL9UmOoDF0+g60Ru4=
+github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.6.0/go.mod h1:cBNHOK0ly1CsICg89/bG2hjC1qQ6OcWUwAii4ofbTJQ=
 github.com/bitrise-io/go-android v1.0.0 h1:lP8O1rvoxKqly4XhN+zf7VhsKl9qvF4YrX45JzS4Z04=
 github.com/bitrise-io/go-android v1.0.0/go.mod h1:gGXmY8hJ1x44AC98TIvZZvxP7o+hs4VI6wgmO4JMfEg=
 github.com/bitrise-io/go-steputils v0.0.0-20210514150206-5b6261447e77/go.mod h1:H0iZjgsAR5NA6pnlD/zKB6AbxEsskq55pwJ9klVmP8w=
@@ -10,8 +10,8 @@ github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5/go.mod h1:DRx7
 github.com/bitrise-io/go-utils v1.0.1/go.mod h1:ZY1DI+fEpZuFpO9szgDeICM4QbqoWVt0RSY3tRI1heY=
 github.com/bitrise-io/go-utils v1.0.13 h1:1QENhTS/JlKH9F7+/nB+TtbTcor6jGrE6cQ4CJWfp5U=
 github.com/bitrise-io/go-utils v1.0.13/go.mod h1:ZY1DI+fEpZuFpO9szgDeICM4QbqoWVt0RSY3tRI1heY=
-github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.27 h1:fB4ZZMZFF4xq9RwXRyB1x6Ty68pFFXSIZ0h/8FDZWmA=
-github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.27/go.mod h1:3XUplo0dOWc3DqT2XA2SeHToDSg7+j1y1HTHibT2H68=
+github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.34 h1:xsLfhItfs4SCCAesbv7UtKpldNqievDvtHggSuBI2+w=
+github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.34/go.mod h1:5Z/vkUZ2BIY7IAVlMGns3ypRjd+J872YBSCJaLWVo/U=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

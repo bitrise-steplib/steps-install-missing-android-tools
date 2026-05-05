@@ -1,4 +1,4 @@
-# github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.5.0
+# github.com/bitrise-io/bitrise-build-cache-cli/v2 v2.6.0
 ## explicit; go 1.24.0
 github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/config/common
 github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/config/gradle/mirrors
@@ -27,8 +27,8 @@ github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.27
-## explicit; go 1.17
+# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.34
+## explicit; go 1.21
 github.com/bitrise-io/go-utils/v2/command
 github.com/bitrise-io/go-utils/v2/env
 github.com/bitrise-io/go-utils/v2/errorutil
