@@ -4,42 +4,78 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
-	"slices"
 	"strings"
+	"sync"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
-func GetCLIVersion(logger log.Logger) string {
+// injectedVersion is the CLI version stamped at build time via:
+//
+//	-ldflags "-X github.com/bitrise-io/bitrise-build-cache-cli/v2/internal/config/common.injectedVersion=<ver>"
+//
+// Goreleaser sets this on every release build. Local `go build` leaves it
+// empty and we fall back to debug.ReadBuildInfo below.
+//
+//nolint:gochecknoglobals
+var injectedVersion string
+
+//nolint:gochecknoglobals
+var versionLogOnce sync.Once
+
+// GetCLIVersion returns the CLI version, resolved in this order:
+//
+//  1. The build-time injected `injectedVersion` (set by goreleaser ldflags).
+//  2. When the CLI is imported as a library (e.g. from a Bitrise step),
+//     the bitrise-build-cache-cli entry in debug.BuildInfo.Deps.
+//  3. The main module's debug.BuildInfo Main.Version, when it's a real
+//     module-aware tag (i.e. not the "(devel)" placeholder Go reports for
+//     ad-hoc local builds).
+//  4. "devel" as a last-resort sentinel.
+//
+// The logger parameter is kept for call-site compatibility; resolution is
+// non-failing so it isn't used here.
+func GetCLIVersion(_ log.Logger) string {
+	if v := strings.TrimSpace(injectedVersion); v != "" {
+		return v
+	}
+
 	bi, ok := debug.ReadBuildInfo()
 	if !ok {
-		logger.Infof("Failed to read build info")
-
-		return "unknown"
+		return "devel"
 	}
 
-	// Find the bitrise-build-cache-cli module in the build info.
-	// If ran from source, it will be the main module.
-	// If ran from a step, it will be a dependency module.
-	modules := []*debug.Module{&bi.Main}
-	modules = append(modules, bi.Deps...)
-	idx := slices.IndexFunc(modules, func(c *debug.Module) bool { return strings.Contains(c.Path, "bitrise-build-cache-cli") })
-	if idx == -1 || idx >= len(modules) {
-		logger.Infof("Failed to find bitrise-build-cache-cli module in build info")
+	for _, mod := range bi.Deps {
+		if mod == nil {
+			continue
+		}
 
-		return "unknown"
+		if !strings.Contains(mod.Path, "bitrise-build-cache-cli") {
+			continue
+		}
+
+		if v := strings.TrimSpace(mod.Version); v != "" {
+			return v
+		}
 	}
 
-	return modules[idx].Version
+	if v := strings.TrimSpace(bi.Main.Version); v != "" && v != "(devel)" {
+		return v
+	}
+
+	return "devel"
 }
 
-// LogCLIVersion writes a single line with the resolved CLI version to STDERR.
+// LogCLIVersion writes a single line with the resolved CLI version to STDERR,
+// at most once per process. Subsequent calls are no-ops, which lets every
+// public entry point (cobra PersistentPreRun hooks, pkg/* Activator/Runner
+// methods used by step libraries) call this without producing duplicate lines.
+//
 // Stderr (not stdout) is intentional: some callers — e.g. xcodebuild wrappers
 // fronted by `@react-native-community/cli-platform-apple` — parse the CLI's
 // stdout as JSON. Writing the version line to stdout breaks that JSON parse.
-// Call this from public entry points (cobra root PersistentPreRun, pkg/*
-// Activator/Runner methods) so each invocation records which CLI the caller
-// is running.
 func LogCLIVersion(logger log.Logger) {
-	_, _ = fmt.Fprintf(os.Stderr, "Bitrise Build Cache CLI version: %s\n", GetCLIVersion(logger))
+	versionLogOnce.Do(func() {
+		_, _ = fmt.Fprintf(os.Stderr, "Bitrise Build Cache CLI version: %s\n", GetCLIVersion(logger))
+	})
 }
