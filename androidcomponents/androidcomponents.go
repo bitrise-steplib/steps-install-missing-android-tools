@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -20,7 +21,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-io/go-utils/sliceutil"
+
 	commandv2 "github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	logv2 "github.com/bitrise-io/go-utils/v2/log"
@@ -163,7 +164,7 @@ func (i installer) scanDependencies(isLastAttempt bool, foundMatches ...string) 
 		for pattern, callback := range i.getDependencyCases() {
 			re := regexp.MustCompile(pattern)
 			if matches := re.FindStringSubmatch(line); len(matches) == 2 {
-				if sliceutil.IsStringInSlice(matches[1], foundMatches) {
+				if slices.Contains(foundMatches, matches[1]) {
 					return fmt.Errorf("unable to solve a dependency installation for the output:\n%s", out)
 				}
 				if callbackErr := callback(matches[1]); callbackErr != nil {
