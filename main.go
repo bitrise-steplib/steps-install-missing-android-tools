@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,7 +18,6 @@ import (
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
 	"github.com/bitrise-io/go-utils/v2/log/colorstring"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/androidcomponents"
-	"github.com/bitrise-steplib/steps-install-missing-android-tools/buildcache"
 	"github.com/bitrise-steplib/steps-install-missing-android-tools/gradle_wrapper"
 	"github.com/hashicorp/go-version"
 	"github.com/kballard/go-shellquote"
@@ -33,7 +31,6 @@ type Inputs struct {
 	AndroidSDKRoot             string `env:"ANDROID_SDK_ROOT"`
 	NDKVersion                 string `env:"ndk_version"`
 	GradlewDependenciesOptions string `env:"gradlew_dependencies_options"`
-	EnableRepoMirror           string `env:"enable_repo_mirror"`
 }
 
 type Config struct {
@@ -42,7 +39,6 @@ type Config struct {
 	AndroidSDKRoot             string
 	NDKVersion                 string
 	GradlewDependenciesOptions []string
-	EnableRepoMirror           bool
 }
 
 func main() {
@@ -107,7 +103,6 @@ func (i AndroidToolsInstaller) ProcessInputs() (Config, error) {
 		AndroidSDKRoot:             inputs.AndroidSDKRoot,
 		NDKVersion:                 inputs.NDKVersion,
 		GradlewDependenciesOptions: gradlewDependenciesOptions,
-		EnableRepoMirror:           inputs.EnableRepoMirror == "true",
 	}
 
 	fmt.Println()
@@ -167,15 +162,6 @@ func (i AndroidToolsInstaller) Run(config Config) error {
 
 	if err := androidcomponents.InstallLicences(androidSdk); err != nil {
 		return fmt.Errorf("failed to ensure android licences: %w", err)
-	}
-
-	if config.EnableRepoMirror && os.Getenv("BITRISE_MAVENCENTRAL_PROXY_ENABLED") == "true" {
-		fmt.Println()
-		log.TInfof("Activate Maven repo mirror")
-		if err := buildcache.ActivateRepoMirrors(context.Background()); err != nil {
-			log.TWarnf("Failed to activate Maven repo mirror: %s", err)
-			log.TWarnf("Continuing without Maven repo mirror")
-		}
 	}
 
 	// Ensure required Android SDK components
